@@ -1,0 +1,166 @@
+---
+title: "Lab meeting 16.5.23"
+author: "Tom Mushkat"
+format: 
+   html:
+    code-fold: true
+    code-tools: true
+editor: visual
+---
+
+```{r, warning = FALSE,message = FALSE}
+pacman::p_load(doSPSS, ez, tidyverse, skimr, here, emmeans)
+
+extract_DS <- function(data, place) {
+  
+  vector <- paste0(data$Descriptive_Statistics$Mean[place] %>% round(1)
+                   , ', '
+                   , data$Descriptive_Statistics$SD[place] %>% round(1))
+  
+  return(vector)
+}
+```
+
+
+```{r, warning = FALSE,message = FALSE}
+Data_1 <- readRDS(here('Data_1.rds'))
+Data_3 <- readRDS(here('Data_3.rds'))
+Data_5 <- readRDS(here('Data_5.rds'))
+
+facet_levels <- c('1', '3', '5')
+```
+
+# METI general
+## Analyses
+```{r, warning = FALSE,message = FALSE}
+
+# modelTow_1 <- twoWay(Data_1$METI, Data_1$source_identity, Data_1$source_answer)
+e_1 <- ezANOVA(data = Data_1, dv = METI, wid = Q1, between = .(source_identity, source_answer), type = 3, return_aov = TRUE, white.adjust = T, between_covariates = .(Age.x, val_Expert_Knowledge, Sex, `Employment status`, `Ethnicity simplified`))
+model_1_lm <- lm(METI ~ Condition, data = Data_1)
+means_1    <- emmeans(model_1_lm, "Condition")
+contrast(object = means_1, method = "pairwise", adjust = "BH")
+
+
+# lm_model <- lm(METI  ~ Condition, data = Data_1)
+# cont1 <- emmeans(lm_model, specs = pairwise ~ Condition,
+#          at = list(Condition = c("ExpertDK", "LaypersonDK")) )
+# cont1$contrasts
+
+
+
+modelTow_3 <- twoWay(Data_3$METI_1, Data_3$source_identity_first, Data_3$Dr_answer)
+e_3 <- ezANOVA(data = Data_3[is.na(Data_3$METI_1) == FALSE, ], dv = METI_1, wid = Q1, between = .(Dr_answer, source_identity_first), type = 3, return_aov = TRUE, white.adjust = T, between_covariates =  .(Age.x, Sex, `Employment status`, `Ethnicity simplified`, val_Expert_Knowledge))
+model_3_lm <- lm(METI_1 ~ Condition, data = Data_3)
+means_3    <- emmeans(model_3_lm, "Condition")
+contrast(means_3, "pairwise", adjust = "BH")
+
+
+# modelTow_5 <- oneWayAnova(Data_5$METI, Data_5$Condition)
+e_5 <- ezANOVA(data = Data_5, dv = METI, wid = prolific_ID, between = .(Condition), type = 3, return_aov = TRUE, between_covariates = .(Age.x, val_expert_knowledge, Sex, `Employment status`, `Ethnicity simplified`))
+model_5_lm <- lm(METI ~ Condition, data = Data_5)
+means_5    <- emmeans(model_5_lm, "Condition")
+contrast(means_5, "pairwise", adjust = "BH")
+
+
+
+```
+
+
+## Figure
+
+```{r, warning = FALSE,message = FALSE}
+data_METI_1 <- Data_1 %>% 
+  mutate(Study = 1) %>% 
+  select(Identity = source_identity, METI = METI, Answer = source_answer, Study)
+
+Data_1_Expert_DK   <- extract_DS(modelTow_1, 1) 
+Data_1_Expert_Know <- extract_DS(modelTow_1, 2) 
+Data_1_Lay_DK      <- extract_DS(modelTow_1, 3) 
+Data_1_Lay_Know    <- extract_DS(modelTow_1, 4)
+
+ann_1_Expert_DK   <- data.frame(Answer = 'IDK', METI = 1, Identity = 'Expert', lab = 'Data_1_Expert_DK', Study = factor('1', levels = facet_levels))
+ann_1_Lay_DK      <- data.frame(Answer = 'IDK', METI = 1, Identity = 'expert not', lab = 'Data_1_Lay_DK', Study = factor('1', levels = facet_levels))
+ann_1_Expert_Know <- data.frame(Answer = 'Know', METI = 1, Identity = 'Expert', lab = 'Data_1_Expert_Know', Study = factor('1', levels = facet_levels))
+ann_1_Lay_Know    <- data.frame(Answer = 'Know', METI = 1, Identity = 'expert not', lab = 'Data_1_Lay_Know', Study = factor('1', levels = facet_levels))
+
+
+
+
+data_METI_3 <- Data_3 %>%
+    mutate(Study = 3) %>% 
+    select(Identity = source_identity_first, METI = METI_1, Answer = Dr_answer, Study)
+
+Data_3_Expert_DK   <- extract_DS(modelTow_3, 1) 
+Data_3_Expert_Know <- extract_DS(modelTow_3, 2) 
+Data_3_Lay_DK      <- extract_DS(modelTow_3, 3) 
+Data_3_Lay_Know    <- extract_DS(modelTow_3, 4) 
+
+ann_3_Expert_DK <- data.frame(Answer = 'IDK', METI = 1, Identity = 'Expert', lab = 'Data_3_Expert_DK',
+                       Study = factor('3', levels = facet_levels))
+ann_3_Lay_DK <- data.frame(Answer = 'IDK', METI = 1, Identity = 'expert not', lab = 'Data_3_Lay_DK',
+                       Study = factor('3', levels = facet_levels))
+ann_3_Expert_Know <- data.frame(Answer = 'Know', METI = 1, Identity = 'Expert', lab = 'Data_3_Expert_Know', Study = factor('3', levels = facet_levels))
+ann_3_Lay_Know <- data.frame(Answer = 'Know', METI = 1, Identity = 'expert not', lab = 'Data_3_Lay_Know',
+                       Study = factor('3', levels = facet_levels))
+
+
+
+
+data_METI_5 <- Data_5 %>% 
+    mutate(Study = 5) %>% 
+    select(Identity = Condition, METI = METI, Answer = Condition, Study)
+
+no_reason <- extract_DS(modelTow_5, 1) 
+reason <- extract_DS(modelTow_5, 2) 
+know <- extract_DS(modelTow_5, 3) 
+
+ann_5_no_reason <- data.frame(Answer = 'IDK_no_reason', METI = 1, Identity = 'IDK_no_reason', lab = 'IDK_no_reason',
+                       Study = factor('5', levels = facet_levels))
+ann_5_reason <- data.frame(Answer = 'IDK_reason', METI = 1, Identity = 'IDK_reason', lab = 'IDK_reason',
+                       Study = factor('5', levels = facet_levels))
+ann_5_know <- data.frame(Answer = 'Know', METI = 1, Identity = 'Know', lab = 'Know', Study = factor('5', levels = facet_levels))
+
+
+
+figure_date <- rbind(data_METI_1, data_METI_3, data_METI_5) %>% 
+  mutate(Answer = case_when(
+                  Answer == 'DK' ~ 'IDK'
+                  , Answer == 'know' ~ 'Know'
+                  , T ~ Answer)
+        , Identity = case_when(
+                  Identity == 'Dr' ~ 'Expert'
+                  , (Identity == 'Layperson' | Identity == 'expert_not') ~ 'expert not'
+                  , T ~ Identity))
+
+
+figure_date %>% 
+  ggplot(aes(x = Answer, y = METI, fill = Identity)) +
+   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "red", width = 0.2, size = 1, position = position_dodge(0.9)) +
+    ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
+    ggplot2::theme_bw() +
+  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
+  theme(axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10)) +
+  facet_wrap(~Study) +
+  
+  geom_text(data = ann_1_Expert_DK, label = Data_1_Expert_DK, size = 4, nudge_x = -0.2, nudge_y = 1) +
+  geom_text(data = ann_1_Lay_DK, label = Data_1_Lay_DK, size = 4, nudge_x = 0.2, nudge_y = -0.5) +
+  geom_text(data = ann_1_Expert_Know, label = Data_1_Expert_Know, size = 4, nudge_x = -0.2, nudge_y = 1) + 
+  geom_text(data = ann_1_Lay_Know, label = Data_1_Lay_Know, size = 4, nudge_x = 0.2, nudge_y = -0.5) +
+  
+  geom_text(data = ann_3_Expert_DK, label = Data_3_Expert_DK, size = 4, nudge_x = -0.2, nudge_y = 1) +
+  geom_text(data = ann_3_Lay_DK, label = Data_3_Lay_DK, size = 4, nudge_x = 0.2, nudge_y = -0.5) +
+  geom_text(data = ann_3_Expert_Know, label = Data_3_Expert_Know, size = 4, nudge_x = -0.2, nudge_y = 1) +
+  geom_text(data = ann_3_Lay_Know, label = Data_3_Lay_Know, size = 4, nudge_x = 0.2, nudge_y = -0.5) +
+
+  geom_text(data = ann_5_no_reason, label = no_reason, size = 4,  nudge_y = 1) +
+  geom_text(data = ann_5_reason, label = reason, size = 4,  nudge_y = 1) +
+  geom_text(data = ann_5_know, label = know, size = 4, nudge_y = 1) 
+  
+
+fig
+```
