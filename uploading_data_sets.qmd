@@ -27,9 +27,9 @@ demographic_1 <- read_csv(here("Data//Exp_1//demographic_data.csv")) %>%
          , `Ethnicity simplified` = if_else(`Ethnicity simplified` == 'White', 1, 0))
 
 Data_1 <- 
-Data_1 %>% 
-  left_join(y = demographic_1, by = join_by(Q1 == `Participant id`)) %>% 
-  drop_na(Sex, `Employment status`, `Ethnicity simplified`)
+  Data_1 %>% 
+    left_join(y = demographic_1, by = join_by(Q1 == `Participant id`)) %>% 
+    drop_na(Sex, `Employment status`, `Ethnicity simplified`)
 
 write_rds(Data_1, 'Data_1.rds')
 ```
@@ -200,9 +200,7 @@ Data_5 <- read_csv(here('Data//Exp_5//data_to_analyze.csv')) %>%
 demographic_5 <-  read_csv(here('Data//Exp_5//demographic_data.csv')) %>% 
    mutate(Sex = if_else(Sex == 'Male', 1, 0)
          ,`Employment status` = if_else(`Employment status` == "Full-Time", 1, 0)
-         , `Ethnicity simplified` = if_else(`Ethnicity simplified` == 'White', 1, 0))
-
-Data_5 <- Data_5 %>% 
+         , `Ethnicity simplified` = if_else(`Ethnicity simplified` == 'White', 1, 0)) %>% 
   left_join(demographic_5, by = join_by(prolific_ID == `Participant id`)) %>% 
   drop_na(Sex, `Employment status`, `Ethnicity simplified`)
 
