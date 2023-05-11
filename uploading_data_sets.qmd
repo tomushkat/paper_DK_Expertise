@@ -197,10 +197,12 @@ Data_5 <- read_csv(here('Data//Exp_5//data_to_analyze.csv')) %>%
                                 , METI_14
                                 , METI_15
                                 , METI_16)))
-demographic_5 <-  read_csv(here('Data//Exp_5//demographic_data.csv')) %>% 
+demographic_5 <-  read_csv(here('Data//Exp_5//demographic_data.csv')) %>%  
    mutate(Sex = if_else(Sex == 'Male', 1, 0)
          ,`Employment status` = if_else(`Employment status` == "Full-Time", 1, 0)
-         , `Ethnicity simplified` = if_else(`Ethnicity simplified` == 'White', 1, 0)) %>% 
+         , `Ethnicity simplified` = if_else(`Ethnicity simplified` == 'White', 1, 0))
+  
+Data_5 <- Data_5 %>%   
   left_join(demographic_5, by = join_by(prolific_ID == `Participant id`)) %>% 
   drop_na(Sex, `Employment status`, `Ethnicity simplified`)
 
