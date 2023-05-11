@@ -21,7 +21,6 @@ extract_DS <- function(data, place) {
 }
 ```
 
-
 ```{r, warning = FALSE,message = FALSE}
 Data_1 <- readRDS(here('Data_1.rds'))
 Data_3 <- readRDS(here('Data_3.rds'))
@@ -30,8 +29,138 @@ Data_5 <- readRDS(here('Data_5.rds'))
 facet_levels <- c('1', '3', '5')
 ```
 
+
+# Main figure
+```{r, warning = FALSE,message = FALSE}
+data_METI_1 <- Data_1 %>% 
+  mutate(Study = 1
+         , Measure = 'METI') %>% 
+  select(Identity = source_identity, METI = METI, Answer = source_answer, Study, Measure)
+
+data_Expertise_1 <- Data_1 %>% 
+  mutate(Study = 1
+         , Measure = 'Expertise') %>% 
+  select(Identity = source_identity, METI = METI_Expertise, Answer = source_answer, Study, Measure)
+
+data_Integrity_1 <- Data_1 %>% 
+  mutate(Study = 1
+         , Measure = 'Integrity') %>% 
+  select(Identity = source_identity, METI = METI_Integrity, Answer = source_answer, Study, Measure)
+
+data_Benevolence_1 <- Data_1 %>% 
+  mutate(Study = 1
+         , Measure = 'Benevolence') %>% 
+  select(Identity = source_identity, METI = METI_Benelovent, Answer = source_answer, Study, Measure)
+
+
+data_METI_3 <- Data_3 %>% 
+  mutate(Study = 3
+         , Measure = 'METI') %>% 
+  select(Identity = source_identity_first, METI = METI_1, Answer = Dr_answer, Study, Measure)
+
+data_Expertise_3 <- Data_3 %>% 
+  mutate(Study = 3
+         , Measure = 'Expertise') %>% 
+  select(Identity = source_identity_first, METI = Expertise_1, Answer = Dr_answer, Study, Measure)
+
+data_Integrity_3 <- Data_3 %>% 
+  mutate(Study = 3
+         , Measure = 'Integrity') %>% 
+  select(Identity = source_identity_first, METI = Integrity_1, Answer = Dr_answer, Study, Measure)
+
+data_Benevolence_3 <- Data_3 %>% 
+  mutate(Study = 3
+         , Measure = 'Benevolence') %>% 
+  select(Identity = source_identity_first, METI = Benevolance_1, Answer = Dr_answer, Study, Measure)
+
+
+data_METI_5 <- Data_5 %>% 
+  mutate(Study = 5
+         , Measure = 'METI') %>% 
+  select(Identity = Condition, METI = METI, Answer = Condition, Study, Measure)
+
+data_Expertise_5 <- Data_5 %>% 
+  mutate(Study = 5
+         , Measure = 'Expertise') %>% 
+  select(Identity = Condition, METI = Expertise, Answer = Condition, Study, Measure)
+
+data_Integrity_5 <- Data_5 %>% 
+  mutate(Study = 5
+         , Measure = 'Integrity') %>% 
+  select(Identity = Condition, METI = Integrity, Answer = Condition, Study, Measure)
+
+data_Benevolence_5 <- Data_5 %>% 
+  mutate(Study = 5
+         , Measure = 'Benevolence') %>% 
+  select(Identity = Condition, METI = Benevolence, Answer = Condition, Study, Measure)
+
+
+
+figure_date <- rbind(data_METI_1, data_METI_3, data_METI_5
+                     , data_Expertise_1, data_Expertise_3, data_Expertise_5
+                     , data_Integrity_1, data_Integrity_3, data_Integrity_5
+                     , data_Benevolence_1, data_Benevolence_3, data_Benevolence_5) %>% 
+  mutate(Answer = case_when(
+                  Answer == 'DK' ~ 'IDK'
+                  , Answer == 'know' ~ 'Know'
+                  , T ~ Answer)
+        , Identity = case_when(
+                  Identity == 'Dr' ~ 'Expert'
+                  , (Identity == 'Layperson' | Identity == 'expert_not') ~ 'expert not'
+                  , T ~ Identity))
+
+
+figure_date %>% 
+  filter(Answer %in% c("IDK", "IDK_reason", "IDK_no_reason")) %>% 
+  mutate(Measure = as.factor(Measure)) %>% 
+  mutate(Measure = fct_relevel(Measure, c('METI', 'Expertise', 'Integrity', 'Benevolence'))) %>% 
+  ggplot(aes(x = Study, y = METI, fill = Identity)) +
+   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "red", width = 0.2, size = 1, position = position_dodge(1.8)) +
+    ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(1.8)) +
+    ggplot2::theme_bw() +
+  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
+  scale_x_continuous(breaks = seq(from = 1, to = 5, by = 2)) +
+  theme(axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 15)) +
+  facet_wrap(~Measure, nrow = 4) 
+
+
+figure_date %>% 
+  # filter(! Answer %in% c("IDK", "IDK_reason", "IDK_no_reason")) %>% 
+  # filter(Study != 5) %>% 
+  mutate(Answer = case_when(
+                    Answer == 'IDK_reason' ~ 'IDK'
+                    , Answer == 'IDK_no_reason' ~ 'IDK'
+                    , T ~ Answer
+  )) %>% 
+  mutate(Measure = as.factor(Measure)) %>% 
+  mutate(Measure = fct_relevel(Measure, c('METI', 'Expertise', 'Integrity', 'Benevolence'))) %>% 
+  ggplot(aes(x = Study, y = METI, fill = Identity)) +
+   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "red", width = 0.2, size = 1, position = position_dodge(1.8)) +
+    ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(1.8)) +
+    ggplot2::theme_bw() +
+  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
+  scale_x_continuous(breaks = seq(from = 1, to = 5, by = 2)) +
+  theme(axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 15)) +
+  facet_wrap(vars(Measure, Answer ), nrow = 4) 
+  
+
+```
+
+
 # METI general
+
 ## Analyses
+
 ```{r, warning = FALSE,message = FALSE}
 
 # modelTow_1 <- twoWay(Data_1$METI, Data_1$source_identity, Data_1$source_answer)
@@ -64,7 +193,6 @@ contrast(means_5, "pairwise", adjust = "BH")
 
 
 ```
-
 
 ## Figure
 
@@ -164,3 +292,5 @@ figure_date %>%
 
 fig
 ```
+
+
