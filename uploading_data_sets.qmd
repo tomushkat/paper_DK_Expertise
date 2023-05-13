@@ -79,11 +79,11 @@ Data_3 <- Data_3 %>%
                   , Professional_1, Professional_2
                   , Experienced_1, Experienced_2
                   , Qualified_1, Qualified_2
-                  , Helpful_1, Helpful_2
+                  # , Helpful_1, Helpful_2
                   , Sincere_1, Sincere_2
                   , Honest_1, Honest_2
                   , Just_1, Just_2
-                  , Unselfish_1, Unselfish_2
+                  # , Unselfish_1, Unselfish_2
                   , Fair_1, Fair_2
                   , Moral_1, Moral_2
                   , Ethical_1, Ethical_2
@@ -95,11 +95,11 @@ Data_3 <- Data_3 %>%
                                   , Professional_1
                                   , Experienced_1
                                   , Qualified_1
-                                  , Helpful_1
+                                  
                                   , Sincere_1
                                   , Honest_1
                                   , Just_1
-                                  , Unselfish_1
+                                  
                                   , Fair_1
                                   , Moral_1
                                   , Ethical_1
@@ -111,11 +111,11 @@ Data_3 <- Data_3 %>%
                                     , Professional_2
                                     , Experienced_2
                                     , Qualified_2
-                                    , Helpful_2
+                                    
                                     , Sincere_2
                                     , Honest_2
                                     , Just_2
-                                    , Unselfish_2
+                                    
                                     , Fair_2
                                     , Moral_2
                                     , Ethical_2
@@ -133,23 +133,23 @@ Data_3 <- Data_3 %>%
                                         , Professional_2
                                         , Experienced_2
                                         , Qualified_2))
-         , Integrity_1 = rowMeans(cbind(Helpful_1
+         , Integrity_1 = rowMeans(cbind(Fair_1
                                         , Sincere_1
                                         , Honest_1
                                         , Just_1))
-         , Integrity_2 = rowMeans(cbind(Helpful_2
+         , Integrity_2 = rowMeans(cbind(Fair_2
                                         , Sincere_2
                                         , Honest_2
                                         , Just_2))
-         , Benevolance_1 = rowMeans(cbind(Unselfish_1
-                                          , Fair_1
-                                          , Moral_1
+         , Benevolance_1 = rowMeans(cbind(
+                                          
+                                           Moral_1
                                           , Ethical_1
                                           , Responsible_1
                                           , Considerate_1))
-         , Benevolance_2 = rowMeans(cbind(Unselfish_2
-                                          , Fair_2
-                                          , Moral_2
+         , Benevolance_2 = rowMeans(cbind(
+                                          
+                                           Moral_2
                                           , Ethical_2
                                           , Responsible_2
                                           , Considerate_2))) %>%
@@ -180,23 +180,7 @@ write_rds(Data_3, 'Data_3.rds')
 # Study 5
 
 ```{r, warning = FLASE, message = FLASE}
-Data_5 <- read_csv(here('Data//Exp_5//data_to_analyze.csv')) %>% 
-  mutate(METI = rowMeans(cbind(METI_1
-                                , METI_2
-                                , METI_3
-                                , METI_4
-                                , METI_5
-                                , METI_6
-                                , METI_7
-                                , METI_8
-                                , METI_9
-                                , METI_10
-                                , METI_11
-                                , METI_12
-                                , METI_13
-                                , METI_14
-                                , METI_15
-                                , METI_16)))
+Data_5 <- read_csv(here('Data//Exp_5//data_to_analyze.csv')) 
 demographic_5 <-  read_csv(here('Data//Exp_5//demographic_data.csv')) %>%  
    mutate(Sex = if_else(Sex == 'Male', 1, 0)
          ,`Employment status` = if_else(`Employment status` == "Full-Time", 1, 0)
