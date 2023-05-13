@@ -77,7 +77,7 @@ data_Benevolence_3 <- Data_3 %>%
 data_METI_5 <- Data_5 %>% 
   mutate(Study = 5
          , Measure = 'METI') %>% 
-  select(Identity = Condition, METI = METI, Answer = Condition, Study, Measure)
+  select(Identity = Condition, METI = METI_overall, Answer = Condition, Study, Measure)
 
 data_Expertise_5 <- Data_5 %>% 
   mutate(Study = 5
@@ -110,24 +110,6 @@ figure_date <- rbind(data_METI_1, data_METI_3, data_METI_5
                   , T ~ Identity))
 
 
-figure_date %>% 
-  filter(Answer %in% c("IDK", "IDK_reason", "IDK_no_reason")) %>% 
-  mutate(Measure = as.factor(Measure)) %>% 
-  mutate(Measure = fct_relevel(Measure, c('METI', 'Expertise', 'Integrity', 'Benevolence'))) %>% 
-  ggplot(aes(x = Study, y = METI, fill = Identity)) +
-   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "red", width = 0.2, size = 1, position = position_dodge(1.8)) +
-    ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(1.8)) +
-    ggplot2::theme_bw() +
-  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  scale_x_continuous(breaks = seq(from = 1, to = 5, by = 2)) +
-  theme(axis.text.x = element_text(size = 15),
-        axis.text.y = element_text(size = 15),
-        axis.title.x = element_text(size = 15),
-        axis.title.y = element_text(size = 15),
-        legend.text = element_text(size = 15),
-        legend.title = element_text(size = 15)) +
-  facet_wrap(~Measure, nrow = 4) 
-
 
 figure_date %>% 
   # filter(! Answer %in% c("IDK", "IDK_reason", "IDK_no_reason")) %>% 
@@ -152,7 +134,79 @@ figure_date %>%
         legend.text = element_text(size = 15),
         legend.title = element_text(size = 15)) +
   facet_wrap(vars(Measure, Answer ), nrow = 4) 
+
+figure_date %>% 
+  # filter(! Answer %in% c("IDK", "IDK_reason", "IDK_no_reason")) %>% 
+  filter(Study != 5) %>%
+  mutate(Identity = case_when(
+                    Identity == 'IDK_reason' ~ 'IDK'
+                    , Identity == 'IDK_no_reason' ~ 'IDK'
+                    , T ~ Identity
+  )) %>%
+  mutate(Measure = as.factor(Measure)) %>% 
+  mutate(Measure = fct_relevel(Measure, c('METI', 'Expertise', 'Integrity', 'Benevolence'))) %>% 
+  ggplot(aes(x = Study, y = METI, fill = Answer )) +
+   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "red", width = 0.2, size = 1, position = position_dodge(1.8)) +
+    ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(1.8)) +
+    ggplot2::theme_bw() +
+  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
+  scale_x_continuous(breaks = seq(from = 1, to = 5, by = 2)) +
+  theme(axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 15)) +
+  facet_wrap(vars(Measure,  Identity), nrow = 4) 
   
+  
+
+
+figure_date %>% 
+  # filter(! Answer %in% c("IDK", "IDK_reason", "IDK_no_reason")) %>% 
+  # filter(Study != 5) %>% 
+    filter(Study != 5) %>% 
+
+  mutate(Answer = case_when(
+                    Answer == 'IDK_reason' ~ 'IDK'
+                    , Answer == 'IDK_no_reason' ~ 'IDK'
+                    , T ~ Answer
+  )) %>% 
+  mutate(Measure = as.factor(Measure)) %>% 
+  mutate(Measure = fct_relevel(Measure, c('METI', 'Expertise', 'Integrity', 'Benevolence'))) %>% 
+  ggplot(aes(x = Study, y = METI, fill = Identity)) +
+   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "red", width = 0.2, size = 1, position = position_dodge(1.8)) +
+    ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(1.8)) +
+    ggplot2::theme_bw() +
+  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
+  scale_x_continuous(breaks = seq(from = 1, to = 5, by = 2)) +
+  theme(axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 15)) +
+  facet_wrap(vars(Measure ), nrow = 4) 
+
+
+figure_date %>% 
+  mutate(Measure = as.factor(Measure)) %>% 
+  mutate(Measure = fct_relevel(Measure, c('METI', 'Expertise', 'Integrity', 'Benevolence'))) %>% 
+  ggplot(aes(x = Study, y = METI, fill = Answer)) +
+   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "red", width = 0.2, size = 1, position = position_dodge(1.8)) +
+    ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(1.8)) +
+    ggplot2::theme_bw() +
+  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
+  scale_x_continuous(breaks = seq(from = 1, to = 5, by = 2)) +
+  theme(axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 15),
+        axis.title.x = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 15)) +
+  facet_wrap(vars(Measure ), nrow = 4) 
+
+
 
 ```
 
@@ -162,13 +216,12 @@ figure_date %>%
 ## Analyses
 
 ```{r, warning = FALSE,message = FALSE}
-
+Data_1$Duration <- Data_1$Duration * 60
 # modelTow_1 <- twoWay(Data_1$METI, Data_1$source_identity, Data_1$source_answer)
-e_1 <- ezANOVA(data = Data_1, dv = METI, wid = Q1, between = .(source_identity, source_answer), type = 3, return_aov = TRUE, white.adjust = T, between_covariates = .(Age.x, val_Expert_Knowledge, Sex, `Employment status`, `Ethnicity simplified`))
+e_1 <- ezANOVA(data = Data_1, dv = METI, wid = Q1, between = .(source_identity, source_answer), type = 3, return_aov = TRUE,  white.adjust = T, between_covariates = .(Age.x, val_Expert_Knowledge, Sex, `Ethnicity simplified`))
 model_1_lm <- lm(METI ~ Condition, data = Data_1)
 means_1    <- emmeans(model_1_lm, "Condition")
 contrast(object = means_1, method = "pairwise", adjust = "BH")
-
 
 # lm_model <- lm(METI  ~ Condition, data = Data_1)
 # cont1 <- emmeans(lm_model, specs = pairwise ~ Condition,
@@ -178,21 +231,129 @@ contrast(object = means_1, method = "pairwise", adjust = "BH")
 
 
 modelTow_3 <- twoWay(Data_3$METI_1, Data_3$source_identity_first, Data_3$Dr_answer)
-e_3 <- ezANOVA(data = Data_3[is.na(Data_3$METI_1) == FALSE, ], dv = METI_1, wid = Q1, between = .(Dr_answer, source_identity_first), type = 3, return_aov = TRUE, white.adjust = T, between_covariates =  .(Age.x, Sex, `Employment status`, `Ethnicity simplified`, val_Expert_Knowledge))
+e_3 <- ezANOVA(data = Data_3[is.na(Data_3$METI_1) == FALSE, ], dv = METI_1, wid = Q1, between = .(Dr_answer, source_identity_first), type = 3, return_aov = TRUE, between_covariates =  .(Age.x, Sex, `Ethnicity simplified`, val_Expert_Knowledge))
 model_3_lm <- lm(METI_1 ~ Condition, data = Data_3)
 means_3    <- emmeans(model_3_lm, "Condition")
 contrast(means_3, "pairwise", adjust = "BH")
 
 
 # modelTow_5 <- oneWayAnova(Data_5$METI, Data_5$Condition)
-e_5 <- ezANOVA(data = Data_5, dv = METI, wid = prolific_ID, between = .(Condition), type = 3, return_aov = TRUE, between_covariates = .(Age.x, val_expert_knowledge, Sex, `Employment status`, `Ethnicity simplified`))
-model_5_lm <- lm(METI ~ Condition, data = Data_5)
+e_5 <- ezANOVA(data = Data_5, dv = METI_overall, wid = prolific_ID, between = .(Condition), type = 3, return_aov = TRUE, between_covariates = .(Age.x, val_expert_knowledge, Sex, `Ethnicity simplified`))
+model_5_lm <- lm(METI_overall ~ Condition, data = Data_5)
 means_5    <- emmeans(model_5_lm, "Condition")
 contrast(means_5, "pairwise", adjust = "BH")
 
 
+```
+
+
+## Expertise
+
+```{r, warning = FALSE,message = FALSE}
+# modelTow_1 <- twoWay(Data_1$METI, Data_1$source_identity, Data_1$source_answer)
+e_1_Expertise <- ezANOVA(data = Data_1, dv = METI_Expertise, wid = Q1, between = .(source_identity, source_answer), type = 3, return_aov = TRUE,  white.adjust = T, between_covariates = .(Age.x, val_Expert_Knowledge, Sex, `Ethnicity simplified`))
+model_1_lm_Expertise <- lm(METI_Expertise ~ Condition, data = Data_1)
+means_1_Expertise    <- emmeans(model_1_lm_Expertise, "Condition")
+contrast(object = means_1_Expertise, method = "pairwise", adjust = "BH")
+
+# lm_model <- lm(METI  ~ Condition, data = Data_1)
+# cont1 <- emmeans(lm_model, specs = pairwise ~ Condition,
+#          at = list(Condition = c("ExpertDK", "LaypersonDK")) )
+# cont1$contrasts
+
+
+
+# modelTow_3 <- twoWay(Data_3$METI_1, Data_3$source_identity_first, Data_3$Dr_answer)
+e_3_Expertise <- ezANOVA(data = Data_3[is.na(Data_3$Expertise_1) == FALSE, ], dv = Expertise_1, wid = Q1, between = .(Dr_answer, source_identity_first), type = 3, return_aov = TRUE, between_covariates =  .(Age.x, Sex, `Ethnicity simplified`, val_Expert_Knowledge))
+model_3_lm_Expertise <- lm(Expertise_1 ~ Condition, data = Data_3)
+means_3_Expertise    <- emmeans(model_3_lm_Expertise, "Condition")
+contrast(means_3_Expertise, "pairwise", adjust = "BH")
+
+
+# modelTow_5 <- oneWayAnova(Data_5$METI, Data_5$Condition)
+e_5_Expertise <- ezANOVA(data = Data_5, dv = Expertise, wid = prolific_ID, between = .(Condition), type = 3, return_aov = TRUE, between_covariates = .(Age.x, val_expert_knowledge, Sex, `Ethnicity simplified`))
+model_5_lm_Expertise <- lm(Expertise ~ Condition, data = Data_5)
+means_5_Expertise    <- emmeans(model_5_lm_Expertise, "Condition")
+contrast(means_5_Expertise, "pairwise", adjust = "BH")
+
 
 ```
+
+
+
+
+
+## Integrity
+
+```{r, warning = FALSE,message = FALSE}
+# modelTow_1 <- twoWay(Data_1$METI, Data_1$source_identity, Data_1$source_answer)
+e_1_Integrity <- ezANOVA(data = Data_1, dv = METI_Integrity, wid = Q1, between = .(source_identity, source_answer), type = 3, return_aov = TRUE,  white.adjust = T, between_covariates = .(Age.x, val_Expert_Knowledge, Sex, `Ethnicity simplified`))
+model_1_lm_Integrity <- lm(METI_Integrity ~ Condition, data = Data_1)
+means_1_Integrity    <- emmeans(model_1_lm_Integrity, "Condition")
+contrast(object = means_1_Integrity, method = "pairwise", adjust = "BH")
+
+# lm_model <- lm(METI  ~ Condition, data = Data_1)
+# cont1 <- emmeans(lm_model, specs = pairwise ~ Condition,
+#          at = list(Condition = c("ExpertDK", "LaypersonDK")) )
+# cont1$contrasts
+
+
+
+# modelTow_3 <- twoWay(Data_3$METI_1, Data_3$source_identity_first, Data_3$Dr_answer)
+e_3_Integrity <- ezANOVA(data = Data_3[is.na(Data_3$Integrity_1) == FALSE, ], dv = Integrity_1, wid = Q1, between = .(Dr_answer, source_identity_first), type = 3, return_aov = TRUE, between_covariates =  .(Age.x, Sex, `Ethnicity simplified`, val_Expert_Knowledge))
+model_3_lm_Integrity <- lm(Integrity_1 ~ Condition, data = Data_3)
+means_3_Integrity    <- emmeans(model_3_lm_Integrity, "Condition")
+contrast(means_3_Integrity, "pairwise", adjust = "BH")
+
+
+# modelTow_5 <- oneWayAnova(Data_5$METI, Data_5$Condition)
+e_5_Integrity <- ezANOVA(data = Data_5, dv = Integrity, wid = prolific_ID, between = .(Condition), type = 3, return_aov = TRUE, between_covariates = .(Age.x, val_expert_knowledge, Sex, `Ethnicity simplified`))
+model_5_lm_Integrity <- lm(Integrity ~ Condition, data = Data_5)
+means_5_Integrity    <- emmeans(model_5_lm_Integrity, "Condition")
+contrast(means_5_Integrity, "pairwise", adjust = "BH")
+
+
+```
+
+
+
+## Benevolence
+
+```{r, warning = FALSE,message = FALSE}
+# modelTow_1 <- twoWay(Data_1$METI, Data_1$source_identity, Data_1$source_answer)
+e_1_Benevolence <- ezANOVA(data = Data_1, dv = METI_Benelovent, wid = Q1, between = .(source_identity, source_answer), type = 3, return_aov = TRUE,  white.adjust = T, between_covariates = .(Age.x, val_Expert_Knowledge, Sex, `Ethnicity simplified`))
+model_1_lm_Benevolence <- lm(METI_Benelovent ~ Condition, data = Data_1)
+means_1_Benevolence    <- emmeans(model_1_lm_Benevolence, "Condition")
+contrast(object = means_1_Benevolence, method = "pairwise", adjust = "BH")
+
+# lm_model <- lm(METI  ~ Condition, data = Data_1)
+# cont1 <- emmeans(lm_model, specs = pairwise ~ Condition,
+#          at = list(Condition = c("ExpertDK", "LaypersonDK")) )
+# cont1$contrasts
+
+
+
+# modelTow_3 <- twoWay(Data_3$METI_1, Data_3$source_identity_first, Data_3$Dr_answer)
+e_3_Benevolence <- ezANOVA(data = Data_3[is.na(Data_3$Benevolance_1) == FALSE, ], dv = Benevolance_1, wid = Q1, between = .(Dr_answer, source_identity_first), type = 3, return_aov = TRUE, between_covariates =  .(Age.x, Sex, `Ethnicity simplified`, val_Expert_Knowledge))
+model_3_lm_Benevolence <- lm(Benevolance_1 ~ Condition, data = Data_3)
+means_3_Benevolence    <- emmeans(model_3_lm_Benevolence, "Condition")
+contrast(means_3_Benevolence, "pairwise", adjust = "BH")
+
+
+# modelTow_5 <- oneWayAnova(Data_5$METI, Data_5$Condition)
+e_5_Benevolence <- ezANOVA(data = Data_5, dv = Benevolence, wid = prolific_ID, between = .(Condition), type = 3, return_aov = TRUE, between_covariates = .(Age.x, val_expert_knowledge, Sex, `Ethnicity simplified`))
+model_5_lm_Benevolence <- lm(Benevolence ~ Condition, data = Data_5)
+means_5_Benevolence    <- emmeans(model_5_lm_Benevolence, "Condition")
+contrast(means_5_Benevolence, "pairwise", adjust = "BH")
+```
+
+
+
+
+
+
+
+
 
 ## Figure
 
