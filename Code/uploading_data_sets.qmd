@@ -1,0 +1,210 @@
+---
+title: "Uploading data sets"
+author: "Tom Mushkat"
+format: 
+   html:
+    code-fold: true
+    code-tools: true
+editor: visual
+---
+
+# Packages
+
+```{r, warning = FLASE, message = FLASE}
+pacman::p_load(tidyverse, here)
+```
+
+# Study 1
+
+```{r, warning = FLASE, message = FLASE}
+Data_1 <- read_csv(here("Data//Exp_1//dataForAnalysis.csv")) %>%
+  mutate(Condition = paste0(source_identity, source_answer))
+
+
+# demographic_1 <- read_csv(here("Data//Exp_1//demographic_data.csv")) %>% 
+#   mutate(Sex = if_else(Sex == 'Male', 1, 0)
+#          ,`Employment status` = if_else(`Employment status` == "Full-Time", 1, 0)
+#          , `Ethnicity simplified` = if_else(`Ethnicity simplified` == 'White', 1, 0))
+
+# Data_1 <- 
+#   Data_1 %>% 
+#     left_join(y = demographic_1, by = join_by(Q1 == `Participant id`)) %>% 
+#     drop_na(Sex, `Employment status`, `Ethnicity simplified`)
+
+write_rds(Data_1, 'Data_1.rds')
+```
+
+# Study 3
+
+```{r, warning = FLASE, message = FLASE}
+Data_3 <- read_csv('Data//Exp_3//data for prep.csv') 
+sub_data <- read_csv('Data//Exp_3//sub data.csv')
+# demographic_3 <- read_csv('Data//Exp_3//demographic_data.csv') %>% 
+#    mutate(Sex = if_else(Sex == 'Male', 1, 0)
+#          ,`Employment status` = if_else(`Employment status` == "Full-Time", 1, 0)
+#          , `Ethnicity simplified` = if_else(`Ethnicity simplified` == 'White', 1, 0))
+
+
+Data_3 <- Data_3 %>% 
+  left_join(sub_data, by = 'Q1') 
+Data_3$...293 <- NULL
+
+Data_3[Data_3 == "7\nVery much"] <- "7"
+Data_3[Data_3 == "Very much"] <- "7"
+Data_3[Data_3 == "1\nNot at all"] <- "1"
+
+Data_3 <- Data_3 %>% 
+  # left_join(demographic_3, by = join_by(Q1 == `Participant id`)) %>% 
+  mutate(valExpert_1 = as.numeric(valExpert)
+         , vlaKnowledge_1 = as.numeric(vlaKnowledge))
+
+
+Data_3$val_Expert_Knowledge = rowMeans(cbind(Data_3$valExpert_1, Data_3$vlaKnowledge_1))
+
+
+Data_3 <- Data_3 %>% 
+  filter(Attention == 'Maybe' 
+           & Honesty == 'Yes, I put in a reasonable effort' 
+           & Disturbances == 'No' 
+           & Alone == 'Alone' 
+           & Consecutively == 'Yes') %>% 
+  mutate(duration_minutes = doSPSS::sdOutliers(duration_minutes)) %>% 
+  drop_na(duration_minutes)
+
+Data_3 <- Data_3 %>%
+  # drop_na(Sex, `Employment status`, `Ethnicity simplified`) %>% 
+  mutate(across(c(Competent_1, Competent_2
+                  , Intelligent_1, Intelligent_2
+                  , Educated_1, Educated_2
+                  , Professional_1, Professional_2
+                  , Experienced_1, Experienced_2
+                  , Qualified_1, Qualified_2
+                  # , Helpful_1, Helpful_2
+                  , Sincere_1, Sincere_2
+                  , Honest_1, Honest_2
+                  , Just_1, Just_2
+                  # , Unselfish_1, Unselfish_2
+                  , Fair_1, Fair_2
+                  , Moral_1, Moral_2
+                  , Ethical_1, Ethical_2
+                  , Responsible_1, Responsible_2
+                  , Considerate_1, Considerate_2), as.numeric)) %>% 
+  mutate(METI_1 =  rowMeans(cbind(Competent_1
+                                  , Intelligent_1
+                                  , Educated_1
+                                  , Professional_1
+                                  , Experienced_1
+                                  , Qualified_1
+                                  
+                                  , Sincere_1
+                                  , Honest_1
+                                  , Just_1
+                                  
+                                  , Fair_1
+                                  , Moral_1
+                                  , Ethical_1
+                                  , Responsible_1
+                                  , Considerate_1))
+         , METI_2 =  rowMeans(cbind(Competent_2
+                                    , Intelligent_2
+                                    , Educated_2
+                                    , Professional_2
+                                    , Experienced_2
+                                    , Qualified_2
+                                    
+                                    , Sincere_2
+                                    , Honest_2
+                                    , Just_2
+                                    
+                                    , Fair_2
+                                    , Moral_2
+                                    , Ethical_2
+                                    , Responsible_2
+                                    , Considerate_2))
+         , Expertise_1 = rowMeans(cbind(Competent_1
+                                        , Intelligent_1
+                                        , Educated_1
+                                        , Professional_1
+                                        , Experienced_1
+                                        , Qualified_1))
+         , Expertise_2 = rowMeans(cbind(Competent_2
+                                        , Intelligent_2
+                                        , Educated_2
+                                        , Professional_2
+                                        , Experienced_2
+                                        , Qualified_2))
+         , Integrity_1 = rowMeans(cbind(Fair_1
+                                        , Sincere_1
+                                        , Honest_1
+                                        , Just_1))
+         , Integrity_2 = rowMeans(cbind(Fair_2
+                                        , Sincere_2
+                                        , Honest_2
+                                        , Just_2))
+         , Benevolance_1 = rowMeans(cbind(
+                                          
+                                           Moral_1
+                                          , Ethical_1
+                                          , Responsible_1
+                                          , Considerate_1))
+         , Benevolance_2 = rowMeans(cbind(
+                                          
+                                           Moral_2
+                                          , Ethical_2
+                                          , Responsible_2
+                                          , Considerate_2))) %>%
+  mutate(Dr_meti          = if_else(Dr_position == 'First', METI_1, METI_2)
+         , Dr_expertise   = if_else(Dr_position == 'First', Expertise_1, Expertise_2)
+         , Dr_integrity   = if_else(Dr_position == 'First', Integrity_1, Integrity_2)
+         , Dr_benevolance = if_else(Dr_position == 'First', Benevolance_1, Benevolance_2)
+         
+         , Lay_meti   = if_else(Dr_position == 'First', METI_2, METI_1)
+         , Lay_expertise   = if_else(Dr_position == 'First', Expertise_2, Expertise_1)
+         , Lay_integrity   = if_else(Dr_position == 'First', Integrity_2, Integrity_1)
+         , Lay_benevolance = if_else(Dr_position == 'First', Benevolance_2, Benevolance_1)) %>% 
+  
+  mutate(select_doctor = case_when(
+                            Complaience %in% c('Dr. Richard Green', 'Dr. James Wood') ~ 'select_doctor'
+                            , Complaience == 'Neither' ~ Complaience
+                            , T ~ 'select_layperson')
+         , answer_position = paste0(Dr_position, Dr_answer)
+         , source_identity_first = if_else(Dr_position == 'First', 'Dr', 'Layperson')
+         , Condition = paste0(source_identity_first, Dr_answer))
+
+
+
+write_rds(Data_3, 'Data_3.rds')
+
+```
+
+# Study 5
+
+```{r, warning = FLASE, message = FLASE}
+Data_5 <- read_csv(here('Data//Exp_5//data_to_analyze.csv')) 
+# demographic_5 <-  read_csv(here('Data//Exp_5//demographic_data.csv')) %>%  
+#    mutate(Sex = if_else(Sex == 'Male', 1, 0)
+#          ,`Employment status` = if_else(`Employment status` == "Full-Time", 1, 0)
+#          , `Ethnicity simplified` = if_else(`Ethnicity simplified` == 'White', 1, 0))
+  
+# Data_5 <- Data_5 %>%   
+#   left_join(demographic_5, by = join_by(prolific_ID == `Participant id`)) %>% 
+#   drop_na(Sex, `Employment status`, `Ethnicity simplified`)
+
+write_rds(Data_5, 'Data_5.rds')
+
+```
+
+```{r, warning = FLASE, message = FLASE}
+Data_6 <- read_csv(here('Data//Exp_6//data_to_analyze.csv')) 
+# demographic_5 <-  read_csv(here('Data//Exp_5//demographic_data.csv')) %>%  
+#    mutate(Sex = if_else(Sex == 'Male', 1, 0)
+#          ,`Employment status` = if_else(`Employment status` == "Full-Time", 1, 0)
+#          , `Ethnicity simplified` = if_else(`Ethnicity simplified` == 'White', 1, 0))
+  
+# Data_5 <- Data_5 %>%   
+#   left_join(demographic_5, by = join_by(prolific_ID == `Participant id`)) %>% 
+#   drop_na(Sex, `Employment status`, `Ethnicity simplified`)
+
+write_rds(Data_6, 'Data_6.rds')
+
+```
