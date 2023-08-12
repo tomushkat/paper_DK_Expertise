@@ -188,7 +188,7 @@ two_way_analysis_gap <- function(dv) {
   ggplot(aes(x = Dr_answer, y = measure, fill = Dr_position )) +
    stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
     stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-scale_fill_manual(values = c("grey", "green")) +
+scale_fill_manual(values = c("red", "blue")) +
           theme_bw() + 
   Theme
   
@@ -266,16 +266,237 @@ Data_3 %>%
 
 
 ```{r}
-
 two_way_data_METI <- long_data(METI_1, METI_2)
 two_way_data_Expertise <- long_data(Expertise_1, Expertise_2)
 two_way_data_Integrity <- long_data(Integrity_1, Integrity_2)
 two_way_data_Benevolence <- long_data(Benevolance_1, Benevolance_2)
+```
 
+# two way analyses
+
+## METI first 2 * 2 
+
+### Order  = 1
+
+2 * 2 METI
+
+```{r}
+two_way_meti_1 <- two_way_analysis_order(two_way_data_METI, 1, title = 'METI')
+two_way_meti_1
+```
+
+#### Answer
+```{r}
+two_way_data_METI %>% 
+   filter(measure_time == 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+
+#### doc_lay
+```{r}
+two_way_data_METI %>% 
+   filter(measure_time == 'First') %>% 
+    group_by(doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+
+2 * 2 Expertise
+
+```{r}
+two_way_expertise_1 <- two_way_analysis_order(two_way_data_Expertise, 1, title = 'Expertise')
+two_way_expertise_1
+ ezANOVA(two_way_data_Expertise[two_way_data_Expertise$measure_time == 'First', ], wid = Q1, between = .(Answer, doc_lay), dv = measure, type = 3, white.adjust = TRUE)
+```
+#### Answer
+
+```{r}
+two_way_data_Expertise %>% 
+   filter(measure_time == 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+#### doc_lay
+```{r}
+two_way_data_Expertise %>% 
+   filter(measure_time == 'First') %>% 
+    group_by(doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+
+2 * 2 Integrity
+
+```{r}
+two_way_integrity_1 <- two_way_analysis_order(two_way_data_Integrity, 1, title = 'Integrity')
+two_way_integrity_1
+```
+
+
+```{r}
+two_way_data_Integrity %>% 
+   filter(measure_time == 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+
+2 * 2 Benevolence
+
+```{r}
+two_way_benevolence_1 <- two_way_analysis_order(two_way_data_Benevolence, 1, title = 'Benevolence')
+two_way_benevolence_1
+ezANOVA(two_way_data_Benevolence[two_way_data_Benevolence$measure_time == 'First', ], wid = Q1, between = .(Answer, doc_lay), dv = measure, type = 3, white.adjust = TRUE)
+```
+
+#### Answer
+```{r}
+two_way_data_Benevolence %>% 
+   filter(measure_time == 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+#### doc_lay
+```{r}
+two_way_data_Benevolence %>% 
+   filter(measure_time == 'First') %>% 
+    group_by(doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+```{r}
+(two_way_meti_1[4][[1]] +  two_way_expertise_1[4][[1]] + two_way_integrity_1[4][[1]] + two_way_benevolence_1[4][[1]])
+```
+
+### Order  = 2
+
+2 * 2 METI
+
+```{r}
+two_way_meti_2 <- two_way_analysis_order(two_way_data_METI, 2, title = 'METI')
+two_way_meti_2
+```
+
+#### Answer
+```{r}
+two_way_data_METI %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+#### doc_lay
+```{r}
+
+two_way_data_METI %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+
+2 * 2 Expertise
+
+```{r}
+two_way_expertise_2 <- two_way_analysis_order(two_way_data_Expertise, 2, title = 'Expertise')
+two_way_expertise_2
+ ezANOVA(two_way_data_Expertise[two_way_data_Expertise$measure_time != 'First', ], wid = Q1, between = .(Answer, doc_lay), dv = measure, type = 3, white.adjust = TRUE)
+```
+
+#### Answer
+```{r}
+two_way_data_Expertise %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+#### doc_lay
+```{r}
+two_way_data_Expertise %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+
+2 * 2 Integrity
+
+```{r}
+two_way_integrity_2 <- two_way_analysis_order(two_way_data_Integrity, 2, title = 'Integrity')
+two_way_integrity_2
+```
+
+#### Answer
+```{r}
+two_way_data_Integrity %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+#### doc_lay
+```{r}
+two_way_data_Integrity %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
 
 ```
 
 
+2 * 2 Benevolence
+
+```{r}
+two_way_benevolence_2 <- two_way_analysis_order(two_way_data_Benevolence, 2, title = 'Benevolence')
+two_way_benevolence_2
+```
+
+#### Answer
+```{r}
+two_way_data_Benevolence %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+#### doc_lay
+```{r}
+two_way_data_Benevolence %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure)) 
+```
+
+```{r}
+(two_way_meti_2[4][[1]] +  two_way_expertise_2[4][[1]] + two_way_integrity_2[4][[1]] + two_way_benevolence_2[4][[1]])
+```
+
+```{r}
+(two_way_meti_1[4][[1]] +  two_way_meti_2[4][[1]] +
+   two_way_expertise_1[4][[1]] + two_way_expertise_2[4][[1]] +
+   two_way_integrity_1[4][[1]] + two_way_integrity_2[4][[1]] +
+   two_way_benevolence_1[4][[1]] + two_way_benevolence_2[4][[1]]) + plot_layout(ncol = 2)
+```
 # Thired way analyses
 ## METI
 ### Third Way analysis
@@ -373,6 +594,7 @@ two_way_data_Expertise %>%
 ```{r}
 two_way_analysis_between(two_way_data_Expertise, 'Expertise')
 ```
+
 #### Dr_answer
 
 ```{r}
@@ -402,7 +624,7 @@ Data_3 %>%
 
 ### Delta analysis
 ```{r}
-# two_way_analysis_gap(doc_minus_lay_expertise)
+two_way_analysis_gap(doc_minus_lay_expertise)
 ```
 
 ## Integrity
@@ -475,6 +697,7 @@ two_way_data_Benevolence %>%
   summarise(Mean = mean_cl_normal(measure)
             , N = length(measure))
 ```
+
 ### Dr_answer * identity interaction
 ```{r}
 Data_3 %>% 
@@ -489,221 +712,6 @@ Data_3 %>%
 two_way_analysis_gap(doc_minus_lay_benevolence)
 ```
 
-
-# two way analyses
-
-## METI first 2 * 2 
-
-### Order  = 1
-
-2 * 2 METI
-
-```{r}
-two_way_analysis_order(two_way_data_METI, 1, title = 'METI')
-```
-
-#### Answer
-```{r}
-two_way_data_METI %>% 
-   filter(measure_time == 'First') %>% 
-    group_by(Answer) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure))
-```
-
-
-#### doc_lay
-```{r}
-two_way_data_METI %>% 
-   filter(measure_time == 'First') %>% 
-    group_by(doc_lay) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure))
-```
-
-
-2 * 2 Expertise
-
-```{r}
-two_way_analysis_order(two_way_data_Expertise, 1, title = 'Expertise')
-
- ezANOVA(two_way_data_Expertise[two_way_data_Expertise$measure_time == 'First', ], wid = Q1, between = .(Answer, doc_lay), dv = measure, type = 3, white.adjust = TRUE)
-```
-#### Answer
-
-```{r}
-two_way_data_Expertise %>% 
-   filter(measure_time == 'First') %>% 
-    group_by(Answer) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure))
-```
-
-#### doc_lay
-```{r}
-two_way_data_Expertise %>% 
-   filter(measure_time == 'First') %>% 
-    group_by(doc_lay) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure))
-```
-
-
-2 * 2 Integrity
-
-```{r}
-two_way_integrity_1 <- two_way_analysis_order(two_way_data_Integrity, 1, title = 'Integrity')
-two_way_integrity_1[2]
-```
-
-
-```{r}
-two_way_data_Integrity %>% 
-   filter(measure_time == 'First') %>% 
-    group_by(Answer) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure))
-
-```
-
-
-2 * 2 Benevolence
-
-```{r}
-two_way_benevolence_1 <- two_way_analysis_order(two_way_data_Benevolence, 1, title = 'Benevolence')
-two_way_benevolence_1[2]
- ezANOVA(two_way_data_Benevolence[two_way_data_Benevolence$measure_time == 'First', ], wid = Q1, between = .(Answer, doc_lay), dv = measure, type = 3, white.adjust = TRUE)
-```
-
-#### Answer
-```{r}
-two_way_data_Benevolence %>% 
-   filter(measure_time == 'First') %>% 
-    group_by(Answer) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure))
-```
-
-#### doc_lay
-```{r}
-two_way_data_Benevolence %>% 
-   filter(measure_time == 'First') %>% 
-    group_by(doc_lay) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure))
-```
-
-```{r}
-(two_way_meti_1[4][[1]] +  two_way_expertise_1[4][[1]] + two_way_integrity_1[4][[1]] + two_way_benevolence_1[4][[1]])
-```
-
-### Order  = 2
-
-2 * 2 METI
-
-```{r}
-two_way_meti_2 <- two_way_analysis_order(two_way_data_METI, 2, title = 'METI')
-two_way_meti_2[2]
-```
-
-#### Answer
-```{r}
-two_way_data_METI %>% 
-   filter(measure_time != 'First') %>% 
-    group_by(Answer) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure))
-```
-
-#### doc_lay
-```{r}
-
-two_way_data_METI %>% 
-   filter(measure_time != 'First') %>% 
-    group_by(doc_lay) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure))
-```
-
-
-2 * 2 Expertise
-
-```{r}
-two_way_expertise_2 <- two_way_analysis_order(two_way_data_Expertise, 2, title = 'Expertise')
-two_way_expertise_2[2]
- ezANOVA(two_way_data_Expertise[two_way_data_Expertise$measure_time != 'First', ], wid = Q1, between = .(Answer, doc_lay), dv = measure, type = 3, white.adjust = TRUE)
-```
-
-#### Answer
-```{r}
-two_way_data_Expertise %>% 
-   filter(measure_time != 'First') %>% 
-    group_by(Answer) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure))
-```
-
-#### doc_lay
-```{r}
-two_way_data_Expertise %>% 
-   filter(measure_time != 'First') %>% 
-    group_by(doc_lay) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure))
-```
-
-
-2 * 2 Integrity
-
-```{r}
-two_way_integrity_2 <- two_way_analysis_order(two_way_data_Integrity, 2, title = 'Integrity')
-two_way_integrity_2[2]
-```
-
-#### Answer
-```{r}
-two_way_data_Integrity %>% 
-   filter(measure_time != 'First') %>% 
-    group_by(Answer) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure))
-```
-
-#### doc_lay
-```{r}
-two_way_data_Integrity %>% 
-   filter(measure_time != 'First') %>% 
-    group_by(doc_lay) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure))
-
-```
-
-
-2 * 2 Benevolence
-
-```{r}
-two_way_benevolence_2 <- two_way_analysis_order(two_way_data_Benevolence, 2, title = 'Benevolence')
-two_way_benevolence_2[2]
-```
-
-#### Answer
-```{r}
-two_way_data_Benevolence %>% 
-   filter(measure_time != 'First') %>% 
-    group_by(Answer) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure))
-```
-
-#### doc_lay
-```{r}
-two_way_data_Benevolence %>% 
-   filter(measure_time != 'First') %>% 
-    group_by(doc_lay) %>% 
-    summarise(Mean = mean_cl_normal(measure)
-               , N = length(measure)) 
-```
 
 
 
