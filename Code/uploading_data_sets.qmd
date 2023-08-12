@@ -12,6 +12,8 @@ editor: visual
 
 ```{r, warning = FLASE, message = FLASE}
 pacman::p_load(tidyverse, here)
+
+
 ```
 
 # Study 1
@@ -37,8 +39,8 @@ write_rds(Data_1, 'Data_1.rds')
 # Study 3
 
 ```{r, warning = FLASE, message = FLASE}
-Data_3 <- read_csv('Data//Exp_3//data for prep.csv') 
-sub_data <- read_csv('Data//Exp_3//sub data.csv')
+Data_3 <- read_csv(here('Data//Exp_3//data for prep.csv')) 
+sub_data <- read_csv(here('Data//Exp_3//sub data.csv'))
 # demographic_3 <- read_csv('Data//Exp_3//demographic_data.csv') %>% 
 #    mutate(Sex = if_else(Sex == 'Male', 1, 0)
 #          ,`Employment status` = if_else(`Employment status` == "Full-Time", 1, 0)
@@ -70,6 +72,13 @@ Data_3 <- Data_3 %>%
            & Consecutively == 'Yes') %>% 
   mutate(duration_minutes = doSPSS::sdOutliers(duration_minutes)) %>% 
   drop_na(duration_minutes)
+
+
+
+
+
+
+
 
 Data_3 <- Data_3 %>%
   # drop_na(Sex, `Employment status`, `Ethnicity simplified`) %>% 
@@ -153,6 +162,7 @@ Data_3 <- Data_3 %>%
                                           , Ethical_2
                                           , Responsible_2
                                           , Considerate_2))) %>%
+  drop_na(METI_1, METI_2) %>% 
   mutate(Dr_meti          = if_else(Dr_position == 'First', METI_1, METI_2)
          , Dr_expertise   = if_else(Dr_position == 'First', Expertise_1, Expertise_2)
          , Dr_integrity   = if_else(Dr_position == 'First', Integrity_1, Integrity_2)
@@ -195,7 +205,9 @@ write_rds(Data_5, 'Data_5.rds')
 ```
 
 ```{r, warning = FLASE, message = FLASE}
-Data_6 <- read_csv(here('Data//Exp_6//data_to_analyze.csv')) 
+Data_6_severe <- read_csv(here('Data//Exp_6//data_to_analyze_severe.csv')) 
+Data_6_light <- read_csv(here('Data//Exp_6//data_to_analyze_light.csv')) 
+
 # demographic_5 <-  read_csv(here('Data//Exp_5//demographic_data.csv')) %>%  
 #    mutate(Sex = if_else(Sex == 'Male', 1, 0)
 #          ,`Employment status` = if_else(`Employment status` == "Full-Time", 1, 0)
@@ -205,6 +217,8 @@ Data_6 <- read_csv(here('Data//Exp_6//data_to_analyze.csv'))
 #   left_join(demographic_5, by = join_by(prolific_ID == `Participant id`)) %>% 
 #   drop_na(Sex, `Employment status`, `Ethnicity simplified`)
 
-write_rds(Data_6, 'Data_6.rds')
+write_rds(Data_6_severe, 'Data_6_severe.rds')
+write_rds(Data_6_light, 'Data_6_light.rds')
+
 
 ```

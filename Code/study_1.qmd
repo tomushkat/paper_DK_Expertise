@@ -1,0 +1,174 @@
+---
+title: "preanalysis"
+format: html
+editor: visual
+---
+
+```{r}
+pacman::p_load(tidyverse, psych, skimr, here, gmodels, doSPSS, car, effectsize)
+Theme <- theme(axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10)) 
+```
+
+```{r}
+Data_1 <- readRDS(here("Data//Data_1.rds"))
+
+```
+
+# Age and gender
+## Goodness of fit
+```{r}
+
+table(Data_1$Gender)
+(100 * table(Data_1$Gender) / nrow(Data_1)) %>%
+  round(1)
+
+skim(Data_1$Age)
+
+```
+
+## Independence
+```{r}
+CrossTable(Data_1$Gender, Data_1$Condition)
+
+oneWayAnova(Data_1$Age, Data_1$Condition)
+```
+
+## Alpha
+```{r}
+Data_1 %>% 
+  select(METI_1, METI_2, METI_3, METI_4, METI_5, METI_6
+         , METI_8, METI_9, METI_10, METI_12 
+         , METI_13, METI_14, METI_15, METI_16) %>% 
+  alpha()
+
+Data_1 %>% 
+  select(METI_1, METI_2, METI_3, METI_4, METI_5, METI_6
+         ) %>% 
+  alpha()
+
+Data_1 %>% 
+  select(
+         METI_8, METI_9, METI_10, METI_12 
+         ) %>% 
+  alpha()
+
+Data_1 %>% 
+  select( 
+         METI_13, METI_14, METI_15, METI_16) %>% 
+  alpha()
+
+```
+
+## METI
+```{r}
+data_1_ds_meti <- Data_1 %>%
+  group_by(source_identity, source_answer) %>%
+  summarise(Mean = mean_cl_normal(METI)
+            , N = length(METI))
+
+lmmodel <- lm(METI ~ source_identity * source_answer, data = Data_1)
+data_1_lmmodel_meti <- emmeans::emmeans(lmmodel, specs = pairwise ~ source_identity * source_answer, adjust = 'BH')
+  # group_by(source_identity, source_answer) %>%
+  # mutate(N = length(source_identity)) %>%
+  # group_by(source_identity, source_answer, N) %>%
+  # summarise(boot_result = list(
+  #   boot::boot(METI, R = 5000, statistic = function(data, idx) mean(data[idx]), sim = "ordinary"))) %>%
+  # mutate(mean = sapply(boot_result, function(x) mean(x$t)),
+  #        ci_lower = sapply(boot_result, function(x) quantile(x$t, probs = 0.025)),
+  #        ci_upper = sapply(boot_result, function(x) quantile(x$t, probs = 0.975)))
+
+data_1_model_meti <- ezANOVA(Data_1, wid = Q1, between = .(source_identity, source_answer), dv = METI, type = 3)
+data_1_modeladj_meti <- ezANOVA(Data_1, wid = Q1, between = .(source_identity, source_answer), dv = METI, type = 3, white.adjust = TRUE)
+
+data_1_fig_meti <- Data_1 %>% 
+  ggplot(aes(x = source_identity, y = METI, fill = source_answer)) +
+  # geom_violin(alpha = 0, aes(color = source_answer)) +
+   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "red", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
+    ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
+    ggplot2::theme_bw() +
+  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
+  ggtitle('METI 1') +
+  Theme
+```
+
+
+## METI_Expertise
+```{r}
+data_1_ds_expertise <- Data_1 %>%
+   group_by(source_identity, source_answer) %>%
+  summarise(Mean = mean_cl_normal(METI_Expertise)
+            , N = length(METI_Expertise))
+
+lmmodel <- lm(METI_Expertise ~ source_identity * source_answer, data = Data_1)
+data_1_lmmodel_expertise <- emmeans::emmeans(lmmodel, specs = pairwise ~ source_identity * source_answer, adjust = 'BH')
+
+data_1_model_expertise <- ezANOVA(Data_1, wid = Q1, between = .(source_identity, source_answer), dv = METI_Expertise, type = 3)
+data_1_modeladj_expertise <- ezANOVA(Data_1, wid = Q1, between = .(source_identity, source_answer), dv = METI_Expertise, type = 3, white.adjust = TRUE)
+
+data_1_fig_expertise <- Data_1 %>% 
+  ggplot(aes(x = source_identity, y = METI_Expertise, fill = source_answer)) +
+  # geom_violin(alpha = 0, aes(color = source_answer)) +
+   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "red", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
+    ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
+    ggplot2::theme_bw() +
+  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
+  ggtitle('Expertise 1') +
+  Theme
+
+```
+
+
+## METI_Integrity
+```{r}
+data_1_ds_integrity <- Data_1 %>%
+  group_by(source_identity, source_answer) %>%
+  summarise(Mean = mean_cl_normal(METI_Integrity)
+            , N = length(METI_Integrity))
+lmmodel <- lm(METI_Integrity ~ source_identity * source_answer, data = Data_1)
+data_1_lmmodel_integrity <- emmeans::emmeans(lmmodel, specs = pairwise ~ source_identity * source_answer, adjust = 'BH')
+
+
+data_1_model_integrity <- ezANOVA(Data_1, wid = Q1, between = .(source_identity, source_answer), dv = METI_Integrity, type = 3)
+data_1_modeladj_integrity <- ezANOVA(Data_1, wid = Q1, between = .(source_identity, source_answer), dv = METI_Integrity, type = 3, white.adjust = TRUE)
+
+data_1_fig_integrity <- Data_1 %>% 
+  ggplot(aes(x = source_identity, y = METI_Integrity, fill = source_answer)) +
+  # geom_violin(alpha = 0, aes(color = source_answer)) +
+   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "red", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
+    ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
+    ggplot2::theme_bw() +
+  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
+  ggtitle('Integrity 1') +
+  Theme
+```
+
+## METI_Benelovent
+```{r}
+data_1_ds_benevolence <- Data_1 %>%
+  group_by(source_identity, source_answer) %>%
+  summarise(Mean = mean_cl_normal(METI_Benelovent)
+            , N = length(METI_Benelovent))
+
+lmmodel <- lm(METI_Benelovent ~ source_identity * source_answer, data = Data_1)
+data_1_lmmodel_benevolence <- emmeans::emmeans(lmmodel, specs = pairwise ~ source_identity * source_answer, adjust = 'BH')
+
+
+data_1_model_benevolence <- ezANOVA(Data_1, wid = Q1, between = .(source_identity, source_answer), dv = METI_Benelovent, type = 3)
+data_1_modeladj_benevolence <- ezANOVA(Data_1, wid = Q1, between = .(source_identity, source_answer), dv = METI_Benelovent, type = 3, white.adjust = TRUE)
+
+data_1_fig_benevolence <- Data_1 %>% 
+  ggplot(aes(x = source_identity, y = METI_Benelovent, fill = source_answer)) +
+  # geom_violin(alpha = 0, aes(color = source_answer)) +
+   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "red", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
+    ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
+    ggplot2::theme_bw() +
+  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
+  ggtitle('Benevolence 1') +
+  Theme
+```
+

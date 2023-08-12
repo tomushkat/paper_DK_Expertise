@@ -1,0 +1,851 @@
+---
+title: "preanalysis"
+format: html
+editor: visual
+---
+
+```{r}
+pacman::p_load(tidyverse, psych, skimr, here, gmodels, doSPSS, car, effectsize, boot, ez, patchwork)
+Theme <- theme(axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        axis.title.x = element_text(size = 10),
+        axis.title.y = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 10)) 
+
+
+long_data <- function(dv_1, dv_2){
+  
+  First_meti <- Data_3 %>% 
+  select(Q1, full_condition, measure = {{dv_1}}, Dr_answer, Dr_position, Complaience) %>% 
+  mutate(who_first = if_else(grepl('up', full_condition), 'Dr', 'Lay')
+         , answer_first = if_else((grepl('DK', full_condition) & grepl('up', full_condition)) |
+                                  (grepl('Know', full_condition) & grepl('down', full_condition)) |
+                                    (grepl('Know', full_condition) & grepl('Down', full_condition)), 'IDK', 'Know')
+         , measure_time = 'First') %>% 
+  mutate(doc_lay = who_first
+         , Answer = answer_first)
+
+Second_meti <- Data_3 %>% 
+  select(Q1, full_condition, measure = {{dv_2}}, Dr_answer, Dr_position, Complaience) %>% 
+  mutate(who_first = if_else(grepl('up', full_condition), 'Dr', 'Lay')
+         , answer_first = if_else((grepl('DK', full_condition) & grepl('up', full_condition)) |
+                                  (grepl('Know', full_condition) & grepl('down', full_condition)) |
+                                    (grepl('Know', full_condition) & grepl('Down', full_condition)), 'IDK', 'Know')
+         , measure_time = 'Second') %>% 
+  mutate(doc_lay = if_else(who_first == 'Dr', 'Lay', 'Dr')
+         , Answer = if_else(answer_first == 'IDK', 'Know', 'IDK'))
+
+
+full_meti <- rbind(First_meti, Second_meti) %>% 
+   mutate(group = case_when(
+            grepl(x = full_condition, pattern = 'DKdown') == TRUE ~ 'doc_DK_second'
+          , grepl(x = full_condition, pattern = c('KnowDown')) == TRUE ~ 'doc_know_second'
+          , grepl(x = full_condition, pattern = c( 'Knowdown'))  == TRUE ~ 'doc_know_second'
+          , grepl(x = full_condition, pattern = 'Knowup')  == TRUE ~ 'doc_know_first'
+          , grepl(x = full_condition, pattern = 'DKup')  == TRUE ~ 'doc_DK_first'
+            )
+          ) %>% 
+  mutate(Dr_answer = as_factor(Dr_answer)
+         , Dr_position = as_factor(Dr_position)
+         , doc_lay = as_factor(doc_lay)) 
+  
+  contrasts(full_meti$Dr_answer)[1]   <- -1
+  contrasts(full_meti$Dr_position)[1] <- -1
+  contrasts(full_meti$doc_lay)[1]     <- -1
+
+  return(full_meti)
+  
+}
+
+two_way_analysis_order <- function(data, order, title){
+  
+  if (order == 1){
+    
+    new_data <- data %>% 
+      filter(measure_time == 'First') %>% 
+      select(doc_lay, Answer, measure, Q1) %>% 
+      mutate(dv_post = paste0(doc_lay, '_', Answer))
+    
+  } else {
+    
+      new_data <- data %>% 
+        filter(measure_time == 'Second') %>% 
+        select(doc_lay, Answer, measure, Q1) %>% 
+        mutate(dv_post = paste0(doc_lay, '_', Answer))
+    
+  }
+  
+  
+  sum <- new_data %>% 
+    group_by(doc_lay, Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+  
+  meti_1 <- ezANOVA(new_data, wid = Q1, between = .(Answer, doc_lay), dv = measure, type = 3, white.adjust =       FALSE)
+  
+  post <- pairwise.t.test(new_data$measure, new_data$dv_post, p.adjust.method = 'BY')
+  
+  fig <-    new_data %>% 
+  ggplot(aes(x = doc_lay, y = measure, fill = Answer )) +
+   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
+    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
+scale_fill_manual(values = c("grey", "green")) + 
+          theme_bw() + ggtitle(title) +
+  Theme
+  
+  
+  
+  return(list(sum, meti_1, post, fig))
+
+}
+
+
+
+third_way_analysis <- function(data, title){
+  
+   new_data <- data %>% 
+      select(Dr_position, Dr_answer, doc_lay, Q1, measure) %>% 
+      mutate(dv_post = paste0(Dr_position, '_', Dr_answer, '_', doc_lay))
+  
+  
+  sum <- new_data %>% 
+    group_by(Dr_position, Dr_answer, doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+  
+  meti_1 <- ezANOVA(new_data, wid = Q1, between = .(Dr_answer, Dr_position), within = .(doc_lay), dv = measure, type = 3, white.adjust = FALSE)
+  
+  post <- pairwise.t.test(new_data$measure, new_data$dv_post, p.adjust.method = 'BY')
+  
+  fig <-    new_data %>% 
+  ggplot(aes(x = Dr_position, y = measure, fill = Dr_answer)) +
+   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
+    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
+    facet_wrap(~doc_lay)
+# scale_fill_manual(values = c("grey", "green")) +
+          theme_bw() + ggtitle(title) +
+  Theme
+  
+  
+  
+  return(list(sum, meti_1, post, fig))
+
+}
+
+two_way_analysis_between <- function(data, title){
+  
+
+  
+  new_data <- data %>% 
+      group_by(Q1, Dr_position, Dr_answer) %>% 
+      mutate(dv = mean(measure)
+             , dv_post = paste0(Dr_position, '_', Dr_answer))
+  
+  
+  sum <- new_data %>% 
+    group_by(Dr_position, Dr_answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+  
+  meti_1 <- ezANOVA(new_data, wid = Q1, between = .(Dr_position, Dr_answer), dv = measure, type = 3, white.adjust = FALSE)
+  
+  post <- pairwise.t.test(new_data$measure, new_data$dv_post, p.adjust.method = 'BY')
+  
+  fig <-    new_data %>% 
+  ggplot(aes(x = Dr_position, y = measure, fill = Dr_answer)) +
+   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
+    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
+scale_fill_manual(values = c("grey", "green")) + 
+          theme_bw() + ggtitle(title) +
+  Theme
+  
+  
+  
+  return(list(sum, meti_1, post, fig))
+
+}
+
+
+two_way_analysis_gap <- function(dv) {
+  
+  
+  new_data <- Data_3 %>% 
+    mutate(measure = {{dv}}) %>% 
+    select(Dr_answer, Dr_position, Q1, measure) %>% 
+    mutate(dv_post = paste0(Dr_answer, '_', Dr_position))
+  
+  sum <- new_data %>% 
+    group_by(Dr_answer, Dr_position) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+  
+  meti_1 <- ezANOVA(new_data, wid = Q1, between = .(Dr_answer, Dr_position), dv = measure, type = 3, white.adjust =       FALSE)
+  
+  post <- pairwise.t.test(new_data$measure, new_data$dv_post, p.adjust.method = 'BY')
+  
+  fig <-    new_data %>% 
+  ggplot(aes(x = Dr_answer, y = measure, fill = Dr_position )) +
+   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
+    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
+scale_fill_manual(values = c("grey", "green")) +
+          theme_bw() + 
+  Theme
+  
+  
+  
+  return(list(sum, meti_1, post, fig))
+  
+  
+  
+  
+}
+```
+
+
+```{r}
+Data_3 <- readRDS(here("Data//Data_3.rds")) %>% 
+    mutate(doc_minus_lay_meti = if_else(grepl('up', full_condition), METI_1 - METI_2,
+METI_2 - METI_1)
+, doc_minus_lay_expertise = if_else(grepl('up', full_condition), Expertise_1 - Expertise_2,
+Expertise_2 - Expertise_1)
+, doc_minus_lay_integrity = if_else(grepl('up', full_condition), Integrity_1 - Integrity_2,
+Integrity_2 - Integrity_1)
+, doc_minus_lay_benevolence = if_else(grepl('up', full_condition), Benevolance_1 - Benevolance_2,
+Benevolance_2 - Benevolance_1))      
+     
+```
+
+# Age and gender
+
+## Goodness of fit
+
+```{r}
+
+table(Data_3$Gender)
+(100 * table(Data_3$Gender) / nrow(Data_3)) %>%
+  round(1)
+
+skim(Data_3$Age)
+
+```
+
+## Independence
+
+```{r}
+CT(Data_3$Gender[Data_3$Gender %in% c("Male", "Female")], Data_3$Condition[Data_3$Gender %in% c("Male", "Female")])
+
+oneWayAnova(Data_3$Age, Data_3$Condition)
+```
+
+## Alpha
+
+```{r}
+Data_3 %>% 
+  select(Competent_1, Intelligent_1, Educated_1, Professional_1, Experienced_1, Qualified_1
+         , Sincere_1, Honest_1, Just_1, Fair_1 
+         , Moral_1, Ethical_1, Responsible_1, Considerate_1) %>% 
+  alpha()
+
+Data_3 %>% 
+  select(Competent_1, Intelligent_1, Educated_1, Professional_1, Experienced_1, Qualified_1
+         ) %>% 
+  alpha()
+
+Data_3 %>% 
+  select(
+        Sincere_1, Honest_1, Just_1, Fair_1 
+         ) %>% 
+  alpha()
+
+Data_3 %>% 
+  select( 
+        Moral_1, Ethical_1, Responsible_1, Considerate_1) %>% 
+  alpha()
+```
+
+
+```{r}
+
+two_way_data_METI <- long_data(METI_1, METI_2)
+two_way_data_Expertise <- long_data(Expertise_1, Expertise_2)
+two_way_data_Integrity <- long_data(Integrity_1, Integrity_2)
+two_way_data_Benevolence <- long_data(Benevolance_1, Benevolance_2)
+
+
+```
+
+
+# Thired way analyses
+## METI
+### Third Way analysis
+```{r}
+third_way_analysis(two_way_data_METI, 'METI')
+```
+
+#### Dr_position
+```{r}
+two_way_data_METI %>% 
+  group_by(Q1, Dr_position) %>% 
+  summarise(M = mean(measure)) %>% 
+  group_by(Dr_position) %>% 
+  summarise(Mean = mean_cl_normal(M)
+            , N = length(M))
+```
+
+
+#### doc_lay
+```{r}
+two_way_data_METI %>% 
+     group_by(doc_lay) %>% 
+     summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+
+### Between analysis
+```{r}
+two_way_analysis_between(two_way_data_METI, 'meti')
+```
+
+#### Dr_position
+```{r}
+two_way_data_METI %>% 
+  group_by(Dr_position) %>% # Dr_position
+  summarise(Mean = mean_cl_normal(measure)
+            , N = length(measure))
+```
+
+
+### Dr_answer * identity interaction
+```{r}
+Data_3 %>% 
+  group_by(Dr_answer) %>% # Dr_position
+  summarise(Mean = mean_cl_normal(doc_minus_lay_meti)
+            , N = length(doc_minus_lay_meti))
+```
+
+
+### Delta analysis
+```{r}
+two_way_analysis_gap(doc_minus_lay_meti)
+```
+
+
+## Expertise
+### Third Way analysis
+```{r}
+third_way_analysis(two_way_data_Expertise, 'Expertise')
+```
+#### Dr_answer
+```{r}
+two_way_data_Expertise %>% 
+  group_by(Q1, Dr_answer) %>% 
+  summarise(M = mean(measure)) %>% 
+  group_by(Dr_answer) %>% 
+  summarise(Mean = mean_cl_normal(M)
+            , N = length(M))
+```
+
+#### Dr_position
+```{r}
+two_way_data_Expertise %>% 
+  group_by(Q1, Dr_position) %>% 
+  summarise(M = mean(measure)) %>% 
+  group_by(Dr_position) %>% 
+  summarise(Mean = mean_cl_normal(M)
+            , N = length(M))
+
+```
+
+#### doc_lay
+```{r}
+
+two_way_data_Expertise %>% 
+     group_by(doc_lay) %>% 
+     summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+
+```
+
+
+### Between analysis
+```{r}
+two_way_analysis_between(two_way_data_Expertise, 'Expertise')
+```
+#### Dr_answer
+
+```{r}
+two_way_data_Expertise %>% 
+  group_by(Dr_answer) %>% # Dr_position
+  summarise(Mean = mean_cl_normal(measure)
+            , N = length(measure))
+```
+
+#### Dr_position
+
+```{r}
+two_way_data_Expertise %>% 
+  group_by(Dr_position) %>% # Dr_position
+  summarise(Mean = mean_cl_normal(measure)
+            , N = length(measure))
+```
+
+
+### Dr_answer * identity interaction
+```{r}
+Data_3 %>% 
+  group_by(Dr_answer) %>% # Dr_position
+  summarise(Mean = mean_cl_normal(doc_minus_lay_expertise)
+            , N = length(doc_minus_lay_expertise))
+```
+
+### Delta analysis
+```{r}
+# two_way_analysis_gap(doc_minus_lay_expertise)
+```
+
+## Integrity
+### Third Way analysis
+```{r}
+third_way_analysis(two_way_data_Integrity, 'Integrity')
+```
+
+
+#### doc_lay
+```{r}
+two_way_data_Integrity %>% 
+     group_by(doc_lay) %>% 
+     summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+### Between analysis
+```{r}
+two_way_analysis_between(two_way_data_Integrity, 'integrity')
+```
+
+### Dr_answer * identity interaction
+```{r}
+Data_3 %>% 
+  group_by(Dr_answer) %>% # Dr_position
+  summarise(Mean = mean_cl_normal(doc_minus_lay_integrity)
+            , N = length(doc_minus_lay_integrity))
+```
+
+
+### Delta analysis
+```{r}
+two_way_analysis_gap(doc_minus_lay_integrity)
+```
+
+## Benevolence
+### Third Way analysis
+```{r}
+third_way_analysis(two_way_data_Benevolence, 'Benevolence')
+```
+
+#### Dr_position
+```{r}
+two_way_data_Benevolence %>% 
+  group_by(Q1, Dr_position) %>% 
+  summarise(M = mean(measure)) %>% 
+  group_by(Dr_position) %>% 
+  summarise(Mean = mean_cl_normal(M)
+            , N = length(M))
+```
+
+#### doc_lay
+```{r}
+two_way_data_Benevolence %>% 
+     group_by(doc_lay) %>% 
+     summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+### Between analysis
+```{r}
+two_way_analysis_between(two_way_data_Benevolence, 'Benevolence')
+```
+
+#### 
+```{r}
+two_way_data_Benevolence %>% 
+  group_by(Dr_position) %>% # Dr_position
+  summarise(Mean = mean_cl_normal(measure)
+            , N = length(measure))
+```
+### Dr_answer * identity interaction
+```{r}
+Data_3 %>% 
+  group_by(Dr_answer) %>% # Dr_position
+  summarise(Mean = mean_cl_normal(doc_minus_lay_benevolence)
+            , N = length(doc_minus_lay_benevolence))
+```
+
+
+### Delta analysis
+```{r}
+two_way_analysis_gap(doc_minus_lay_benevolence)
+```
+
+
+# two way analyses
+
+## METI first 2 * 2 
+
+### Order  = 1
+
+2 * 2 METI
+
+```{r}
+two_way_analysis_order(two_way_data_METI, 1, title = 'METI')
+```
+
+#### Answer
+```{r}
+two_way_data_METI %>% 
+   filter(measure_time == 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+
+#### doc_lay
+```{r}
+two_way_data_METI %>% 
+   filter(measure_time == 'First') %>% 
+    group_by(doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+
+2 * 2 Expertise
+
+```{r}
+two_way_analysis_order(two_way_data_Expertise, 1, title = 'Expertise')
+
+ ezANOVA(two_way_data_Expertise[two_way_data_Expertise$measure_time == 'First', ], wid = Q1, between = .(Answer, doc_lay), dv = measure, type = 3, white.adjust = TRUE)
+```
+#### Answer
+
+```{r}
+two_way_data_Expertise %>% 
+   filter(measure_time == 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+#### doc_lay
+```{r}
+two_way_data_Expertise %>% 
+   filter(measure_time == 'First') %>% 
+    group_by(doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+
+2 * 2 Integrity
+
+```{r}
+two_way_integrity_1 <- two_way_analysis_order(two_way_data_Integrity, 1, title = 'Integrity')
+two_way_integrity_1[2]
+```
+
+
+```{r}
+two_way_data_Integrity %>% 
+   filter(measure_time == 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+
+```
+
+
+2 * 2 Benevolence
+
+```{r}
+two_way_benevolence_1 <- two_way_analysis_order(two_way_data_Benevolence, 1, title = 'Benevolence')
+two_way_benevolence_1[2]
+ ezANOVA(two_way_data_Benevolence[two_way_data_Benevolence$measure_time == 'First', ], wid = Q1, between = .(Answer, doc_lay), dv = measure, type = 3, white.adjust = TRUE)
+```
+
+#### Answer
+```{r}
+two_way_data_Benevolence %>% 
+   filter(measure_time == 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+#### doc_lay
+```{r}
+two_way_data_Benevolence %>% 
+   filter(measure_time == 'First') %>% 
+    group_by(doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+```{r}
+(two_way_meti_1[4][[1]] +  two_way_expertise_1[4][[1]] + two_way_integrity_1[4][[1]] + two_way_benevolence_1[4][[1]])
+```
+
+### Order  = 2
+
+2 * 2 METI
+
+```{r}
+two_way_meti_2 <- two_way_analysis_order(two_way_data_METI, 2, title = 'METI')
+two_way_meti_2[2]
+```
+
+#### Answer
+```{r}
+two_way_data_METI %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+#### doc_lay
+```{r}
+
+two_way_data_METI %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+
+2 * 2 Expertise
+
+```{r}
+two_way_expertise_2 <- two_way_analysis_order(two_way_data_Expertise, 2, title = 'Expertise')
+two_way_expertise_2[2]
+ ezANOVA(two_way_data_Expertise[two_way_data_Expertise$measure_time != 'First', ], wid = Q1, between = .(Answer, doc_lay), dv = measure, type = 3, white.adjust = TRUE)
+```
+
+#### Answer
+```{r}
+two_way_data_Expertise %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+#### doc_lay
+```{r}
+two_way_data_Expertise %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+
+2 * 2 Integrity
+
+```{r}
+two_way_integrity_2 <- two_way_analysis_order(two_way_data_Integrity, 2, title = 'Integrity')
+two_way_integrity_2[2]
+```
+
+#### Answer
+```{r}
+two_way_data_Integrity %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+#### doc_lay
+```{r}
+two_way_data_Integrity %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+
+```
+
+
+2 * 2 Benevolence
+
+```{r}
+two_way_benevolence_2 <- two_way_analysis_order(two_way_data_Benevolence, 2, title = 'Benevolence')
+two_way_benevolence_2[2]
+```
+
+#### Answer
+```{r}
+two_way_data_Benevolence %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(Answer) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure))
+```
+
+#### doc_lay
+```{r}
+two_way_data_Benevolence %>% 
+   filter(measure_time != 'First') %>% 
+    group_by(doc_lay) %>% 
+    summarise(Mean = mean_cl_normal(measure)
+               , N = length(measure)) 
+```
+
+
+
+```{r}
+log_data <- two_way_data_METI %>% 
+  mutate(new_com = case_when (
+    
+    grepl('Dr', Complaience) == TRUE ~ 1
+    , Complaience == 'Neither' ~ 2
+    , T ~ 0
+    
+    )) %>% 
+  
+    filter(new_com < 2)
+          
+
+ regLog1 <- stats::glm(new_com ~ who_first * answer_first * measure_time, family = binomial('logit'), data = log_data)
+ # Performing a logistic regression
+  ORCI    <- round(exp(cbind(Odds_Ratios = stats::coef(regLog1), stats::confint(regLog1))), 2)  # Calculation odds ratios and confidance intervales for the odds ratios
+
+  cdiff           <- round(regLog1$null.deviance - regLog1$deviance, 2)  # Calculating the Chi square value of the model
+  dfdiff          <- regLog1$df.null - regLog1$df.residual              # Calculating the degrees of freedom value of the model
+  p               <- round(stats::pchisq(q = cdiff, df = dfdiff, lower.tail = FALSE), 100) # Calculating the p value of the model
+  Nagelkerke      <- rcompanion::nagelkerke(fit = regLog1, null = NULL, restrictNobs = FALSE)  # Calculating the explained variance
+  NagelkerkePrint <- paste0(100 * round(Nagelkerke$Pseudo.R.squared.for.model.vs.null[3], 4), "%") # Extracting the explained variance
+
+  Hoslem          <- ResourceSelection::hoslem.test(x = regLog1$y, y = fitted(regLog1), g = 10)  # Calculating the significance of the accuracy
+  hoslemStatistic <- round(Hoslem$statistic, 2)
+  hoslemP         <- round(Hoslem$p.value, 2)
+  binaryCorrect   <- ifelse(regLog1$fitted.values > 0.5, 1, 0)                        # Creating a vector of 1 and 0 (by the probabilities of each ID to be 1, and the Classification value)
+  Prediction      <- table(log_data$new_com, binaryCorrect)                                                    # Creating a table with the predicted values and the actual DV values
+  Accuracy        <- paste0(round((Prediction[1, 1] + Prediction[2, 2]) / sum(Prediction) * 100, 2), "%")   # Calculating the Accuracy
+  Sensitivity     <- paste0(round(Prediction[2, 2] / (Prediction[2, 2] + Prediction[1, 1]) * 100, 2), "%")  # Calculating the sensitivity
+  Specificity     <- paste0(round(Prediction[1, 1] / (Prediction[1, 1] + Prediction[1, 2]) * 100, 2), "%")  # Calculating the specificity
+
+  
+GoF(log_data$who_first[log_data$measure_time == 'First'], c(0.5, 0.5))  
+GoF(log_data$answer_first[log_data$measure_time == 'First'], c(0.5, 0.5))  
+
+CT(log_data$answer_first[log_data$measure_time == 'First'], log_data$who_first[log_data$measure_time == 'First'])
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+
+
+
+two_way_data_METI %>% 
+  group_by(group) %>% 
+  summarise(M = round(mean(measure), 2)) # %>%
+  arrange(M)
+
+two_way_data_METI %>% 
+  group_by(Dr_answer , Dr_position, doc_lay) %>% 
+  summarise(M = round(mean(measure), 2))  %>%  
+  arrange(M)
+
+two_way_data_METI$Dr_answer=as.factor(two_way_data_METI$Dr_answer)
+two_way_data_METI$Dr_position=as.factor(two_way_data_METI$Dr_position)
+two_way_data_METI$doc_lay=as.factor(two_way_data_METI$doc_lay)
+contrasts(two_way_data_METI$Dr_answer)[1]=-1
+contrasts(two_way_data_METI$Dr_position)[1]=-1
+contrasts(two_way_data_METI$doc_lay)[1]=-1
+model <- lme4::lmer(measure ~ Dr_answer * Dr_position * doc_lay + (1 | Q1 ), data = two_way_data_METI)
+vif(model)
+
+two_way_data_METI %>% 
+  group_by(who_first , answer_first, measure_time) %>% 
+  summarise(M = round(mean(measure), 2)) %>%  
+  arrange(M)  
+
+
+meti_1 <-   ezANOVA(two_way_data_METI, wid = Q1, within = .(doc_lay), between = .(Dr_answer, Dr_position), dv = measure, type = 3, white.adjust = FALSE)
+
+
+
+
+    two_way_data_METI %>% 
+  ggplot(aes(x = group, y = measure, fill = doc_lay , color = Answer)) +
+ # geom_violin(alpha = 0, aes(color = Dr_answer)) +
+   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
+    ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
+scale_fill_manual(values = c("grey", "green")) + 
+scale_color_manual(values = c("red", "blue")) + 
+      
+          ggplot2::theme_bw() +
+  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
+  ggtitle('METI 3') + 
+  # facet_grid(~measure_time) +
+  Theme
+  
+  
+  two_way_data_METI %>% 
+  ggplot(aes(x = who_first, y = measure, fill = answer_first )) +
+ # geom_violin(alpha = 0, aes(color = Dr_answer)) +
+   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
+    ggplot2::stat_summary(fun = mean, geom = "bar", position = position_dodge(0.9)) +
+    ggplot2::theme_bw() +
+    scale_fill_manual(values = c("grey", "green")) + 
+scale_color_manual(values = c("red", "blue")) + 
+  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
+  ggtitle('METI 3') + 
+  facet_grid(~measure_time) +
+  Theme
+  
+  
+    two_way_data_METI %>% 
+  ggplot(aes(x = Dr_answer, y = measure, fill = Dr_position )) +
+ # geom_violin(alpha = 0, aes(color = Dr_answer)) +
+   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
+    ggplot2::stat_summary(fun = mean, geom = "bar", position = position_dodge(0.9)) +
+    ggplot2::theme_bw() +
+      scale_fill_manual(values = c("grey", "green")) + 
+scale_color_manual(values = c("red", "blue")) + 
+  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
+  ggtitle('METI 3') + 
+  facet_grid(~doc_lay) +
+  Theme
+  
+
+   
+   
+   
+ two_way_analysis_gap(Data_3$doc_minus_lay_expertise)
+ two_way_analysis_gap(Data_3$doc_minus_lay_integrity)
+ two_way_analysis_gap(Data_3$doc_minus_lay_benevolence)
+    
+    
+```
+
+calculating the gap between the doc and the lay, than to do 2 Dr position * 2 Dr asnwer  
+
+
