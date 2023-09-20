@@ -326,7 +326,7 @@ t_1 <- indttest(two_way_data_METI$measure[two_way_data_METI$doc_lay == 'Dr' & tw
 ```{r}
 t_2 <- indttest(two_way_data_METI$measure[two_way_data_METI$doc_lay == 'Lay' & two_way_data_METI$measure_time == 'First'], two_way_data_METI$Answer[two_way_data_METI$doc_lay == 'Lay' & two_way_data_METI$measure_time == 'First']) 
 
-p.adjust(c(t_1$Model_summary$p.value, t_2$Model_summary$p.value),method="bonferroni")
+p.adjust(c(t_1$Model_summary$p.value, t_2$Model_summary$p.value, 1, 1),method="bonferroni")
 
 ```
 
@@ -368,7 +368,7 @@ t_1 <- indttest(two_way_data_Expertise$measure[two_way_data_Expertise$doc_lay ==
 ```{r}
 t_2 <- indttest(two_way_data_Expertise$measure[two_way_data_Expertise$doc_lay == 'Lay' & two_way_data_Expertise$measure_time == 'First'], two_way_data_Expertise$Answer[two_way_data_Expertise$doc_lay == 'Lay' & two_way_data_Expertise$measure_time == 'First']) 
 
-p.adjust(c(t_1$Model_summary$p.value, t_2$Model_summary$p.value),method="bonferroni")
+p.adjust(c(t_1$Model_summary$p.value, t_2$Model_summary$p.value, 1, 1),method="bonferroni")
 
 ```
 
@@ -397,7 +397,7 @@ t_1 <- indttest(two_way_data_Integrity$measure[two_way_data_Integrity$doc_lay ==
 ```{r}
 t_2 <- indttest(two_way_data_Integrity$measure[two_way_data_Integrity$doc_lay == 'Lay' & two_way_data_Integrity$measure_time == 'First'], two_way_data_Integrity$Answer[two_way_data_Integrity$doc_lay == 'Lay' & two_way_data_Integrity$measure_time == 'First']) 
 
-p.adjust(c(t_1$Model_summary$p.value, t_2$Model_summary$p.value),method="bonferroni")
+p.adjust(c(t_1$Model_summary$p.value, t_2$Model_summary$p.value, 1, 1),method="bonferroni")
 
 ```
 
@@ -440,7 +440,7 @@ t_1 <- indttest(two_way_data_Benevolence$measure[two_way_data_Benevolence$doc_la
 t_2 <- indttest(two_way_data_Benevolence$measure[two_way_data_Benevolence$doc_lay == 'Lay' & two_way_data_Benevolence$measure_time == 'First'], two_way_data_Benevolence$Answer[two_way_data_Benevolence$doc_lay == 'Lay' & two_way_data_Benevolence$measure_time == 'First']) 
 
 
-p.adjust(c(t_1$Model_summary$p.value, t_2$Model_summary$p.value),method="bonferroni")
+p.adjust(c(t_1$Model_summary$p.value, t_2$Model_summary$p.value, 1, 1),method="bonferroni")
 ```
 
 ```{r}
