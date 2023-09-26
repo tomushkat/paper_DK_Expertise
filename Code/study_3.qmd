@@ -7,12 +7,13 @@ editor: visual
 
 ```{r}
 pacman::p_load(tidyverse, psych, skimr, here, gmodels, doSPSS, car, effectsize, boot, ez, patchwork)
-Theme <- theme(axis.text.x = element_text(size = 15),
-        axis.text.y = element_text(size = 15),
-        axis.title.x = element_text(size = 15),
-        axis.title.y = element_text(size = 15),
-        legend.text = element_text(size = 15),
-        legend.title = element_text(size = 15)) 
+Theme <- theme(axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+        legend.text = element_text(size = 20),
+        legend.title = element_text(size = 20),
+        title = element_text(size = 20)) 
 
 
 long_data <- function(dv_1, dv_2){
@@ -88,14 +89,19 @@ two_way_analysis_order <- function(data, order, title){
   post <- pairwise.t.test(new_data$measure, new_data$dv_post, p.adjust.method = 'bonferroni')
   
   fig <-    new_data %>% 
-  ggplot(aes(x = doc_lay, y = measure, fill = Answer )) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-scale_fill_manual(values = c("grey", "green")) + 
-          theme_bw() + ggtitle(title) +
+    mutate(doc_lay = if_else(doc_lay == 'Lay', 'Layperson', 'Physician')
+           , Answer = if_else(Answer == 'IDK', 'IDK', 'A specific offer')
+           , `Reply type` = Answer) %>% 
+  ggplot(aes(x = doc_lay, y = measure, fill = `Reply type` )) +
+   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.4, linewidth = 2, position = position_dodge(0.9)) +
+    stat_summary(fun = mean, geom = "bar",  position = position_dodge(0.9), alpha = 0.8) +
+ geom_point(aes(color = `Reply type`), position = position_jitterdodge(jitter.width = 0.2, jitter.height = 0), size = 1) +    scale_fill_manual(values =  c("grey30", "grey80")) +
+      scale_color_manual(values = c("grey0", "grey0")) +  # Set the point colors to gray
+          theme_bw() + ggtitle(title) + xlab('') + ylab('') +
+     theme(legend.position = "none") +
   Theme
   
-  return(list(sum, meti_1, post, fig))
+  return(list(sum, meti_1, post, fig = fig))
 
 }
 
@@ -119,11 +125,17 @@ third_way_analysis <- function(data, title){
   
   fig <-    new_data %>% 
   ggplot(aes(x = Dr_position, y = measure, fill = Dr_answer)) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
+    
+   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.3, linewidth = 1, position = position_dodge(0.9)) +
+    
     stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
+    
+      scale_fill_manual(values = c("grey30", "grey80")) +
+    
     facet_wrap(~doc_lay)
 # scale_fill_manual(values = c("grey", "green")) +
           theme_bw() + ggtitle(title) +
+            xlab('') + ylab('') +
   Theme
   
   return(list(sum, meti_1, post, fig))
@@ -179,8 +191,8 @@ two_way_analysis_gap <- function(dv) {
   ggplot(aes(x = Dr_answer, y = measure, fill = Dr_position )) +
    stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
     stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-scale_fill_manual(values = c("red", "blue")) +
-          theme_bw() + 
+scale_fill_manual(values = c("grey30", "grey80")) +
+          theme_bw() + xlab('') + ylab('') +
   Theme
   
   return(list(sum, meti_1, post, fig))
@@ -294,7 +306,9 @@ two_way_data_Benevolence <- long_data(Benevolance_1, Benevolance_2)
 
 ```{r}
 two_way_meti_1 <- two_way_analysis_order(two_way_data_METI, 1, title = 'METI')
-two_way_meti_1
+# two_way_meti_1
+
+fig_meti <- two_way_meti_1$fig
 ```
 
 #### Answer IDK > Know
@@ -335,8 +349,11 @@ p.adjust(c(t_1$Model_summary$p.value, t_2$Model_summary$p.value, 1, 1),method="b
 
 ```{r}
 two_way_expertise_1 <- two_way_analysis_order(two_way_data_Expertise, 1, title = 'Expertise')
-two_way_expertise_1
- ezANOVA(two_way_data_Expertise[two_way_data_Expertise$measure_time == 'First', ], wid = Q1, between = .(Answer, doc_lay), dv = measure, type = 3, white.adjust = TRUE)
+# two_way_expertise_1
+#  ezANOVA(two_way_data_Expertise[two_way_data_Expertise$measure_time == 'First', ], wid = Q1, between = .(Answer, doc_lay), dv = measure, type = 3, white.adjust = TRUE)
+ 
+fig_expertise <- two_way_expertise_1$fig
+ 
 ```
 
 #### Answer: IDK > Lay
@@ -376,7 +393,10 @@ p.adjust(c(t_1$Model_summary$p.value, t_2$Model_summary$p.value, 1, 1),method="b
 
 ```{r}
 two_way_integrity_1 <- two_way_analysis_order(two_way_data_Integrity, 1, title = 'Integrity')
-two_way_integrity_1
+# two_way_integrity_1
+
+fig_integrity <- two_way_integrity_1$fig
+
 ```
 
 ## Answer: IDK > Know
@@ -405,8 +425,15 @@ p.adjust(c(t_1$Model_summary$p.value, t_2$Model_summary$p.value, 1, 1),method="b
 
 ```{r}
 two_way_benevolence_1 <- two_way_analysis_order(two_way_data_Benevolence, 1, title = 'Benevolence')
-two_way_benevolence_1
-ezANOVA(two_way_data_Benevolence[two_way_data_Benevolence$measure_time == 'First', ], wid = Q1, between = .(Answer, doc_lay), dv = measure, type = 3, white.adjust = TRUE)
+# two_way_benevolence_1
+# ezANOVA(two_way_data_Benevolence[two_way_data_Benevolence$measure_time == 'First', ], wid = Q1, between = .(Answer, doc_lay), dv = measure, type = 3, white.adjust = TRUE)
+
+fig_benevolence <- two_way_benevolence_1$fig
+
+
+study_3_round_1 <- 
+(fig_meti + fig_expertise + fig_integrity + fig_benevolence)
+
 ```
 
 #### Answer: IDK > Know
@@ -858,7 +885,7 @@ Data_3 %>%
 two_way_analysis_gap(doc_minus_lay_benevolence)
 ggsave(filename = 'third_way_benevolence_plot.png', height = 20, width = 40, units = 'cm')
 benevolence_IDK_first_model <- one_sample_correc(Data_3$doc_minus_lay_benevolence, 'IDK', 'First', 'third')
-benevolence_IDK_second_model <- one_sample_correc(Data_3$doc_minus_lay_benevolence, 'IDK', 'Second', 'third')
+benevolence_IDK_second_model <-  one_sample_correc(Data_3$doc_minus_lay_benevolence, 'IDK', 'Second', 'third')
 benevolence_Know_first_model <- one_sample_correc(Data_3$doc_minus_lay_benevolence, 'Know', 'First', 'third')
 benevolence_Know_second_model <- one_sample_correc(Data_3$doc_minus_lay_benevolence, 'Know', 'Second', 'third')
 ```

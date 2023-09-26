@@ -5,15 +5,16 @@ editor: visual
 ---
 
 ```{r}
-pacman::p_load(here, doSPSS, tidyverse, psych, ez, effectsize)
-Theme <- theme(axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10),
-        axis.title.x = element_text(size = 10),
-        axis.title.y = element_text(size = 10),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 10)) 
+pacman::p_load(here, doSPSS, tidyverse, psych, ez, effectsize, patchwork)
+Theme <- theme(axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+        legend.text = element_text(size = 20),
+        legend.title = element_text(size = 20),
+        title = element_text(size = 20)) 
 Data_6_light <- readRDS(here("Data//Data_6_light.rds")) 
-Data_6_severe <- readRDS(here("Data//Data_6_severe.rds")) 
+# Data_6_severe <- readRDS(here("Data//Data_6_severe.rds")) 
 
 ```
 
@@ -43,51 +44,28 @@ Data_6_severe %>%
                                                 , Moral, Ethical, Responsible, Considerate) %>% 
   alpha()
 
-Data_6 %>% 
+Data_6_light %>% 
   select(Competent, Intelligent, Educated, Professional, Experienced, Qualified) %>% 
   alpha()
 
-Data_6 %>% 
+Data_6_light %>% 
   select(
                                                  Sincere, Honest, Just, Fair
                                                 ) %>% 
   alpha()
 
-Data_6 %>% 
+Data_6_light %>% 
   select( Moral, Ethical, Responsible, Considerate) %>% 
   alpha()
 ```
 
 # METI overall
 
-Corr with Suprise_bin
 
+## Three way model
+
+No three way interaction.
 ```{r, warning=FALSE, message=FALSE}
-
-data_6_ds_meti <- Data_6_light %>%
-    group_by(know_IDK, doc_lay, just_noJust) %>%
-  summarise(Mean = mean_cl_normal(METI_overall)
-            , N = length(METI_overall))
-# data_6_ds_meti <- Data_6_severe %>%
-#     group_by(know_IDK, doc_lay, just_noJust) %>%
-#   summarise(Mean = mean_cl_normal(METI_overall)
-#             , N = length(METI_overall))
-
-  
-  # Data_6 %>%
-  #   group_by(know_IDK, doc_lay, just_noJust) %>%
-  #   mutate(N = length(know_IDK)) %>%
-  #   group_by(know_IDK, doc_lay, just_noJust, N) %>%
-  # summarise(boot_result = list(
-  #   boot(METI_overall, R = 5000, statistic = function(data, idx) mean(data[idx]), sim = "ordinary"))) %>%
-  # mutate(mean = sapply(boot_result, function(x) mean(x$t)),
-  #        ci_lower = sapply(boot_result, function(x) quantile(x$t, probs = 0.025)),
-  #        ci_upper = sapply(boot_result, function(x) quantile(x$t, probs = 0.975)))
-
-
-
-
-data_6_model_meti <- 
 ez::ezANOVA(data      = Data_6_light
             , dv      = METI_overall
             , wid     = Q1
@@ -98,94 +76,102 @@ ez::ezANOVA(data      = Data_6_light
 
             , white.adjust = FALSE)
 
+
 Data_6_light %>%
-    group_by(just_noJust) %>%
-  summarise(Mean = mean_cl_normal(METI_overall)
+    group_by(know_IDK, doc_lay, just_noJust) %>%
+  summarise(round(mean_cl_normal(METI_overall), 2)
             , N = length(METI_overall))
 
 
 data_6_fig_meti_three_way <- Data_6_light %>% 
-  ggplot(aes(x = doc_lay, y = METI_overall, fill = know_IDK)) +
+  mutate(`Reply type` = know_IDK
+         , doc_lay = if_else(doc_lay == 'doc', 'Physician', 'Layperson')
+         , just_noJust = if_else(just_noJust == 'just', 'Justified', 'Non justified')) %>% 
+  ggplot(aes(x = doc_lay, y = METI_overall, fill = `Reply type`)) +
+  # geom_violin(alpha = 0) +
+   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.4, linewidth = 2, position = position_dodge(0.9)) +
+    stat_summary(fun = mean, geom = "bar", alpha = 0.8, position = position_dodge(0.9)) +
+  scale_fill_manual(values = c("grey30", "grey80")) +
+  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
+       geom_point(aes(color = `Reply type`), position = position_jitterdodge(jitter.width = 0.2, jitter.height = 0), size = 1) + 
+  scale_fill_manual(values =  c("grey30", "grey80")) +
+  xlab('') + ylab('') +
+  ggtitle('METI') +
+  theme_bw() +
+        scale_color_manual(values = c("grey0", "grey0")) +  # Set the point colors to gray
+  Theme +
+  facet_wrap(~ just_noJust) +
+  theme(
+   strip.text.x = element_text(
+      size=20
+     )
+   ) +          theme(legend.position = "none")
+
+ 
+
+
+
+
+
+Data_6_light <- 
+Data_6_light %>% 
+  mutate(con = paste0(doc_lay, '_', know_IDK, '_', just_noJust))
+
+postHoc(Data_6_light$METI_overall, Data_6_light$con, Correction  = 'bonfferroni')
+```
+
+## know_IDK Main effect: IDK > know
+```{r, warning=FALSE, message=FALSE}
+Data_6_light %>% 
+  group_by(know_IDK) %>% 
+  summarise(round(mean_cl_normal(METI_overall), 2)
+            , N = length(METI_overall))
+```
+
+## doc_lay Main effect: doc > lay
+```{r, warning=FALSE, message=FALSE}
+Data_6_light %>% 
+  group_by(doc_lay) %>% 
+  summarise(round(mean_cl_normal(METI_overall), 2)
+            , N = length(METI_overall))
+```
+
+## know_IDK * just_noJust: just IDK > just know (p = .050)
+```{r, warning=FALSE, message=FALSE}
+Data_6_light %>% 
+  group_by(know_IDK, just_noJust) %>% 
+  summarise(round(mean_cl_normal(METI_overall), 2)
+            , N = length(METI_overall))
+meti_2 <- 
+
+Data_6_light %>% 
+  ggplot(aes(x = just_noJust, y = METI_overall, fill = know_IDK)) +
   # geom_violin(alpha = 0) +
    stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
     stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
   scale_fill_manual(values = c("grey30", "grey80")) +
   scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  xlab('Profession') + ylab('Total METI') +
-  guides(fill = guide_legend(title = "Proffesion")) +
-  theme_bw() +
-  Theme +
-  facet_wrap(~ just_noJust) 
-
-
-Data_6_light %>% 
-  ggplot(aes(x = doc_lay, y = METI_overall, fill = doc_lay)) +
-  geom_violin(alpha = 0) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-  scale_fill_manual(values = c("grey30", "grey80")) +
-  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  xlab('Profession') + ylab('Total METI') +
-  guides(fill = guide_legend(title = "Proffesion")) +
-  theme_bw() +
-  Theme
-
-Data_6_light %>% 
-  group_by(doc_lay) %>% 
-  summarise(Mean = mean_cl_normal(METI_overall)
-            , N = length(METI_overall))
-
-Data_6_light %>% 
-  ggplot(aes(x = know_IDK, y = METI_overall, fill = know_IDK)) +
-  geom_violin(alpha = 0) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-  scale_fill_manual(values = c("grey30", "grey80")) +
-  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  xlab('Answer') + ylab('Total METI') +
+  xlab('Justification') + ylab('METI') +
   guides(fill = guide_legend(title = "Answer")) +
+  ggtitle('METI') +
   theme_bw() +
   Theme
 
-Data_6_light %>% 
-  group_by(know_IDK) %>% 
-  summarise(Mean = mean_cl_normal(METI_overall)
-            , N = length(METI_overall))
-
-Data_6_light %>% 
-  ggplot(aes(x =  just_noJust, y = METI_overall, fill = know_IDK)) +
-  geom_violin(alpha = 0) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-  scale_fill_manual(values = c("grey30", "grey80")) +
-  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  xlab('Answer') + ylab('Total METI') +
-  guides(fill = guide_legend(title = "Justification")) +
-  theme_bw() +
-  Theme
 fit1 <- lm(METI_overall ~ just_noJust * know_IDK , data = Data_6_light)
-
-emmeans::emmeans(fit1, specs = pairwise ~  just_noJust * know_IDK, adjust = 'BY')
-# postHoc(Data_6$METI_overall, paste0(Data_6$just_noJust, Data_6$know_IDK))
-
-
-
+emmeans::emmeans(fit1, specs = pairwise ~  just_noJust * know_IDK, adjust = 'bonf')
 ```
 
-# METI Expertise
+# Expertise
+## Three way model
+
+No three way interaction.
 
 ```{r, warning=FALSE, message=FALSE}
-data_6_ds_expertise <- Data_6_light %>%
-    group_by(know_IDK, doc_lay, just_noJust) %>%
-  summarise(Mean = mean_cl_normal(Expertise)
-            , N = length(Expertise))
-
 Data_6_light %>%
-    group_by(just_noJust) %>%
-  summarise(Mean = mean_cl_normal(Expertise)
+    group_by(know_IDK, doc_lay, just_noJust) %>%
+  summarise(round(mean_cl_normal(Expertise), 2)
             , N = length(Expertise))
 
-data_6_model_expertise <- 
 ez::ezANOVA(data      = Data_6_light
             , dv      = Expertise
             , wid     = Q1
@@ -196,7 +182,6 @@ ez::ezANOVA(data      = Data_6_light
 
             , white.adjust = FALSE)
 
-data_6_modeladj_expertise <- 
 ez::ezANOVA(data      = Data_6_light
             , dv      = Expertise
             , wid     = Q1
@@ -204,85 +189,91 @@ ez::ezANOVA(data      = Data_6_light
             , type    = 3
             , return_aov = TRUE
             , detailed   = FALSE
-
             , white.adjust = TRUE)
 
-data_6_fig_expertise_three_way <- Data_6_light %>% 
-  ggplot(aes(x = doc_lay , y = Expertise, fill = know_IDK)) +
-  geom_violin(alpha = 0) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-  scale_fill_manual(values = c("grey30", "grey80")) +
-  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  xlab('Answer') + ylab('Total METI') +
-  guides(fill = guide_legend(title = "Answer")) +
-  theme_bw() +
-  Theme +
-  facet_wrap(~just_noJust)
 
-Data_6_light %>% 
-  ggplot(aes(x = just_noJust, y = Expertise, fill = just_noJust)) +
-  geom_violin(alpha = 0) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
+data_6_fig_expertise_three_way <- Data_6_light %>% 
+  mutate(`Reply type` = know_IDK
+         , doc_lay = if_else(doc_lay == 'doc', 'Physician', 'Layperson')
+         , just_noJust = if_else(just_noJust == 'just', 'Justified', 'Non justified')) %>% 
+  ggplot(aes(x = doc_lay, y = Expertise, fill = `Reply type`)) +
+  # geom_violin(alpha = 0) +
+   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.4, linewidth = 2, position = position_dodge(0.9)) +
+    stat_summary(fun = mean, geom = "bar", alpha = 0.8, position = position_dodge(0.9)) +
   scale_fill_manual(values = c("grey30", "grey80")) +
   scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  xlab('Justification') + ylab('Total METI') +
-  guides(fill = guide_legend(title = "Justification")) +
+       geom_point(aes(color = `Reply type`), position = position_jitterdodge(jitter.width = 0.2, jitter.height = 0), size = 1) + 
+  scale_fill_manual(values =  c("grey30", "grey80")) +
+  xlab('') + ylab('') +
+  ggtitle('Expertise') +
   theme_bw() +
-  Theme
+        scale_color_manual(values = c("grey0", "grey0")) +  # Set the point colors to gray
+  Theme +
+  facet_wrap(~ just_noJust) +
+  theme(
+   strip.text.x = element_text(
+      size=20
+     )
+   ) 
+
+
+data_6_fig_meti_three_way
+data_6_fig_expertise_three_way
+data_6_fig_integrity_three_way
+```
+
+## just_noJust main effect: Just > no just
+```{r, warning=FALSE, message=FALSE}
 Data_6_light %>%
     group_by(just_noJust) %>%
-  summarise(Mean = mean_cl_normal(Expertise)
+  summarise(round(mean_cl_normal(Expertise), 2)
             , N = length(Expertise))
+```
 
+## doc_lay main effect: doc > lay
 
-Data_6_light %>% 
-  ggplot(aes(x = doc_lay, y = Expertise, fill = doc_lay)) +
-  geom_violin(alpha = 0) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-  scale_fill_manual(values = c("grey30", "grey80")) +
-  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  xlab('Profession') + ylab('Total METI') +
-  guides(fill = guide_legend(title = "Profession")) +
-  theme_bw() +
-  Theme
+```{r, warning=FALSE, message=FALSE}
 Data_6_light %>%
     group_by(doc_lay) %>%
-  summarise(Mean = mean_cl_normal(Expertise)
+  summarise(round(mean_cl_normal(Expertise), 2)
+            , N = length(Expertise))
+```
+
+## just_noJust * know_IDK: know no just > IDK no just
+```{r, warning=FALSE, message=FALSE}
+Data_6_light %>%
+    group_by(just_noJust, know_IDK) %>%
+  summarise(round(mean_cl_normal(Expertise), 2)
             , N = length(Expertise))
 
+exp_2 <- 
 Data_6_light %>% 
   ggplot(aes(x = just_noJust, y = Expertise, fill = know_IDK)) +
-  geom_violin(alpha = 0) +
+  # geom_violin(alpha = 0) +
    stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
     stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
   scale_fill_manual(values = c("grey30", "grey80")) +
   scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  xlab('Justification') + ylab('Total METI') +
+  xlab('Justification') + ylab('METI') +
   guides(fill = guide_legend(title = "Answer")) +
+  ggtitle('Expertise') +
   theme_bw() +
   Theme
-
   
 fit2 <- lm(Expertise ~ just_noJust * know_IDK, data = Data_6_light)
-emmeans::emmeans(fit2, specs = pairwise ~ just_noJust * know_IDK, adjust = 'BY')
+emmeans::emmeans(fit2, specs = pairwise ~ just_noJust * know_IDK, adjust = 'bonf')
 
-
-
+(meti_2 + exp_2)
 ```
 
 # METI Integrity
 
 ```{r, warning=FALSE, message=FALSE}
-
-data_6_ds_integrity <-  Data_6_light %>%
+Data_6_light %>%
     group_by(know_IDK, doc_lay, just_noJust) %>%
-  summarise(Mean = mean_cl_normal(Integrity)
+  summarise(round(mean_cl_normal(Integrity), 2)
             , N = length(Integrity))
 
-data_6_model_integrity <- 
 ez::ezANOVA(data      = Data_6_light
             , dv      = Integrity
             , wid     = Q1
@@ -293,72 +284,62 @@ ez::ezANOVA(data      = Data_6_light
 
             , white.adjust = FALSE)
 
-
-
-Data_6_light %>%
-    group_by(just_noJust) %>%
-  summarise(Mean = mean_cl_normal(Integrity)
-            , N = length(Integrity))
-
-
-data_6_fig_integrity_three_way <- Data_6_light %>% 
-    ggplot(aes(x = doc_lay , y = Integrity, fill = know_IDK)) +
-  geom_violin(alpha = 0) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-  scale_fill_manual(values = c("grey30", "grey80")) +
-  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  xlab('Profession') + ylab('Total METI') +
-  guides(fill = guide_legend(title = "Profession")) +
-  theme_bw() +
-  Theme +
-  facet_wrap(~just_noJust)
-
-
+data_6_fig_integrity_three_way <- 
 Data_6_light %>% 
-  ggplot(aes(x = know_IDK, y = Integrity, fill = know_IDK)) +
-  geom_violin(alpha = 0) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
+  mutate(`Reply type` = know_IDK
+         , doc_lay = if_else(doc_lay == 'doc', 'Physician', 'Layperson')
+         , just_noJust = if_else(just_noJust == 'just', 'Justified', 'Non justified')) %>% 
+  ggplot(aes(x = doc_lay, y = Integrity, fill = `Reply type`)) +
+  # geom_violin(alpha = 0) +
+   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.4, linewidth = 2, position = position_dodge(0.9)) +
+    stat_summary(fun = mean, geom = "bar", alpha = 0.8, position = position_dodge(0.9)) +
   scale_fill_manual(values = c("grey30", "grey80")) +
   scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  xlab('Answer') + ylab('Total METI') +
-  guides(fill = guide_legend(title = "Answer")) +
+       geom_point(aes(color = `Reply type`), position = position_jitterdodge(jitter.width = 0.2, jitter.height = 0), size = 1) + 
+  scale_fill_manual(values =  c("grey30", "grey80")) +
+  xlab('') + ylab('') +
+  ggtitle('Integrity') +
   theme_bw() +
-  Theme
+        scale_color_manual(values = c("grey0", "grey0")) +  # Set the point colors to gray
+  Theme +
+  facet_wrap(~ just_noJust) +
+  theme(
+   strip.text.x = element_text(
+      size=20
+     )
+   ) +
+  theme(legend.position = "none")
+
+
+```
+
+know_IDK main effect: IDK > know
+```{r, warning=FALSE, message=FALSE}
 Data_6_light %>%
     group_by(know_IDK) %>%
-  summarise(Mean = mean_cl_normal(Integrity)
-            , N = length(Integrity))
-
-Data_6_light %>% 
-  ggplot(aes(x = doc_lay, y = Integrity, fill = doc_lay)) +
-  geom_violin(alpha = 0) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-  scale_fill_manual(values = c("grey30", "grey80")) +
-  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  xlab('Profession') + ylab('Total METI') +
-  guides(fill = guide_legend(title = "Profession")) +
-  theme_bw() +
-  Theme
-Data_6_light %>%
-    group_by(doc_lay) %>%
-  summarise(Mean = mean_cl_normal(Integrity)
+  summarise(round(mean_cl_normal(Integrity), 2)
             , N = length(Integrity))
 
 ```
 
+doc_lay main effect: doc > lay
+```{r, warning=FALSE, message=FALSE}
+Data_6_light %>%
+    group_by(doc_lay) %>%
+  summarise(round(mean_cl_normal(Integrity), 2)
+            , N = length(Integrity))
+```
+
+
+
 # METI Benevolence
 
 ```{r, warning=FALSE, message=FALSE}
-
-data_6_ds_benevolence <- Data_6_light %>%
+Data_6_light %>%
     group_by(know_IDK, doc_lay, just_noJust) %>%
-  summarise(Mean = mean_cl_normal(Benevolence)
+  summarise(round(mean_cl_normal(Benevolence), 2)
             , N = length(Benevolence))
 
-data_6_model_benevolence <- 
   ez::ezANOVA(data      = Data_6_light
             , dv      = Benevolence
             , wid     = Q1
@@ -366,72 +347,61 @@ data_6_model_benevolence <-
             , type    = 3
             , return_aov = TRUE
             , detailed   = FALSE
-
             , white.adjust = FALSE)
 
-Data_6_light %>%
-    group_by(just_noJust) %>%
-  summarise(Mean = mean_cl_normal(Benevolence)
-            , N = length(Benevolence))
-
-
-data_6_fig_benevolence_three_way <- Data_6_light %>% 
-  ggplot(aes(x =  know_IDK, y = Benevolence, fill = doc_lay)) +
-  geom_violin(alpha = 0) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-  scale_fill_manual(values = c("grey30", "grey80")) +
-  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  xlab('Profession') + ylab('Total METI') +
-  guides(fill = guide_legend(title = "Answer")) +
-  theme_bw() +
-  Theme +
-  facet_wrap(~just_noJust)
-
-
-
+data_6_fig_benevolence_three_way <-     
 Data_6_light %>% 
-  ggplot(aes(x = know_IDK, y = Benevolence, fill = know_IDK)) +
- geom_violin(alpha = 0) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
+  mutate(`Reply type` = know_IDK
+         , doc_lay = if_else(doc_lay == 'doc', 'Physician', 'Layperson')
+         , just_noJust = if_else(just_noJust == 'just', 'Justified', 'Non justified')) %>% 
+  ggplot(aes(x = doc_lay, y = Benevolence, fill = `Reply type`)) +
+  # geom_violin(alpha = 0) +
+   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.4, linewidth = 2, position = position_dodge(0.9)) +
+    stat_summary(fun = mean, geom = "bar", alpha = 0.8, position = position_dodge(0.9)) +
   scale_fill_manual(values = c("grey30", "grey80")) +
   scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  xlab('Answer') + ylab('Total METI') +
-  guides(fill = guide_legend(title = "Answer")) +
+       geom_point(aes(color = `Reply type`), position = position_jitterdodge(jitter.width = 0.2, jitter.height = 0), size = 1) + 
+  scale_fill_manual(values =  c("grey30", "grey80")) +
+  xlab('') + ylab('') +
+  ggtitle('Benevolence') +
   theme_bw() +
-  Theme 
+        scale_color_manual(values = c("grey0", "grey0")) +  # Set the point colors to gray
+  Theme +
+  facet_wrap(~ just_noJust) +
+  theme(
+   strip.text.x = element_text(
+      size=20
+     )
+   ) +
+  theme(legend.position = "none")
+
+(data_6_fig_meti_three_way +
+data_6_fig_expertise_three_way +
+data_6_fig_integrity_three_way +
+data_6_fig_benevolence_three_way)
+
+
+```
+
+know_IDK main effect: IDK > know
+```{r, warning=FALSE, message=FALSE}
 Data_6_light %>%
     group_by(know_IDK) %>%
-  summarise(Mean = mean_cl_normal(Benevolence)
+  summarise(round(mean_cl_normal(Benevolence), 2)
             , N = length(Benevolence))
+```
 
-
-Data_6_light %>% 
-  ggplot(aes(x = doc_lay, y = Benevolence, fill = doc_lay)) +
- geom_violin(alpha = 0) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-  scale_fill_manual(values = c("grey30", "grey80")) +
-  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  xlab('Profession') + ylab('Total METI') +
-  guides(fill = guide_legend(title = "Profession")) +
-  theme_bw() +
-  Theme 
-
+doc_lay main effect: doc > lay
+```{r, warning=FALSE, message=FALSE}
 Data_6_light %>%
     group_by(doc_lay) %>%
-  summarise(Mean = mean_cl_normal(Benevolence)
+  summarise(round(mean_cl_normal(Benevolence), 2)
             , N = length(Benevolence))
-
-
 ```
 
 # Complaience
 
 ```{r, warning=FALSE, message=FALSE}
-
-
 ez::ezANOVA(data      = Data_6_light
             , dv      = Complaience
             , wid     = Q1
@@ -454,57 +424,45 @@ ez::ezANOVA(data      = Data_6_light
 
 Data_6_light %>% 
   group_by(know_IDK, doc_lay, just_noJust) %>% 
-  summarise(Mean = mean_cl_normal(Complaience)
+  summarise(round(mean_cl_normal(Complaience), 2)
             , N = length(Complaience))
 
 
-
-Data_6_light %>% 
-  group_by(just_noJust) %>% 
-  summarise(Mean = mean_cl_normal(Complaience)
-            , N = length(Complaience))
-
-
+data_6_fig_compliance_three_way <- 
 Data_6_light %>% 
   ggplot(aes(x = just_noJust , y = Complaience, fill = know_IDK)) +
-   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "red", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
+   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
     ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
     ggplot2::theme_bw() +
+    scale_fill_manual(values = c("grey30", "grey80")) +
   scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
   Theme +
-  facet_wrap(~doc_lay) 
+  ggtitle('Compliance') +
+  facet_wrap(~doc_lay)
+```
 
-
-
-Data_6_light %>% 
-  ggplot(aes(x = know_IDK, y = Complaience, fill = know_IDK)) +
-   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "red", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-    ggplot2::theme_bw() +
-  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  Theme
+know_IDK main effect: IDK > know
+```{r, warning=FALSE, message=FALSE}
 Data_6_light %>% 
   group_by(know_IDK) %>% 
-  summarise(Mean = mean_cl_normal(Complaience)
+  summarise(round(mean_cl_normal(Complaience), 2)
             , N = length(Complaience))
+```
 
-
-Data_6_light %>% 
-  ggplot(aes(x = doc_lay, y = Complaience, fill = doc_lay)) +
-   ggplot2::stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "red", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    ggplot2::stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-    ggplot2::theme_bw() +
-  scale_y_continuous(breaks = seq(from = 1, to = 10, by = 1)) +
-  Theme
-
+doc_lay main effect: doc > lay
+```{r, warning=FALSE, message=FALSE}
 Data_6_light %>% 
   group_by(doc_lay) %>% 
-  summarise(Mean = mean_cl_normal(Complaience)
+  summarise(round(mean_cl_normal(Complaience), 2)
             , N = length(Complaience))
+```
 
+doc_lay * know_IDK: the delta for layperson is greater
+Interesting that the compliance for layperson IDK is greater than physician know
+```{r, warning=FALSE, message=FALSE}
 Data_6_light %>% 
   group_by(know_IDK, doc_lay) %>% 
-  summarise(Mean = mean_cl_normal(Complaience)
+  summarise(round(mean_cl_normal(Complaience), 2)
             , N = length(Complaience))
 
 Data_6_light %>% 
@@ -517,13 +475,7 @@ Data_6_light %>%
 
 
 fit3 <- lm(Complaience ~ doc_lay * know_IDK, data = Data_6_light)
-emmeans::emmeans(fit3, specs = pairwise ~ doc_lay * know_IDK, adjust = 'BY')
-
-m_doc <- t.test(Complaience ~ know_IDK, data = Data_6_light[Data_6_light$doc_lay == 'doc', ])
-m_kay <- t.test(Complaience ~ know_IDK, data = Data_6_light[Data_6_light$doc_lay != 'doc', ])
-effectsize(m_doc)
-effectsize(m_kay)
-
+emmeans::emmeans(fit3, specs = pairwise ~ doc_lay * know_IDK, adjust = 'bonf')
 ```
 
 ## Three way interaction logistic regression

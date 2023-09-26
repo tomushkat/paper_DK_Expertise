@@ -6,12 +6,13 @@ editor: visual
 
 ```{r}
 pacman::p_load(tidyverse, psych, skimr, here, gmodels, doSPSS, car, effectsize, boot, ez, patchwork)
-Theme <- theme(axis.text.x = element_text(size = 15),
-        axis.text.y = element_text(size = 15),
-        axis.title.x = element_text(size = 15),
-        axis.title.y = element_text(size = 15),
-        legend.text = element_text(size = 15),
-        legend.title = element_text(size = 15)) 
+Theme <- theme(axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+        legend.text = element_text(size = 20),
+        legend.title = element_text(size = 20),
+        title = element_text(size = 20)) 
 
 
 
@@ -80,7 +81,7 @@ third_way_analysis <- function(data, title){
 
 
 
-two_way_analysis_gap <- function(dv) {
+two_way_analysis_gap <- function(dv, title) {
   
   new_data <- Data_3 %>% 
     mutate(measure = {{dv}}) %>% 
@@ -97,17 +98,23 @@ two_way_analysis_gap <- function(dv) {
   post <- pairwise.t.test(new_data$measure, new_data$dv_post, p.adjust.method = 'bonferroni')
   
   fig <-    new_data %>% 
-  ggplot(aes(x = who_IDK, y = measure, fill = position_IDK )) +
-   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.2, linewidth = 1, position = position_dodge(0.9)) +
-    stat_summary(fun = mean, geom = "bar", alpha = 0.2, position = position_dodge(0.9)) +
-scale_fill_manual(values = c("red", "blue")) +
-          theme_bw() + 
+    mutate(`IDK reply order` = position_IDK
+           , who_IDK = if_else(who_IDK == 'Dr', 'Physician', 'Layperson')) %>% 
+  ggplot(aes(x = who_IDK, y = measure, fill = `IDK reply order` )) +
+   stat_summary(fun.data = "mean_cl_normal", geom = "errorbar", color = "black", width = 0.4, linewidth = 2, position = position_dodge(0.9)) +
+    stat_summary(fun = mean, geom = "bar", alpha = 0.8, position = position_dodge(0.9)) +
+     geom_point(aes(color = `IDK reply order`), position = position_jitterdodge(jitter.width = 0.2, jitter.height = 0), size = 1) +    scale_fill_manual(values =  c("grey30", "grey80")) +
+
+      scale_color_manual(values = c("grey0", "grey0")) +  # Set the point colors to gray
+    scale_fill_manual(values =  c("grey30", "grey80")) +
+          theme_bw() + xlab('') + ylab('') + ggtitle(title) +
+         theme(legend.position = "none") +
+
   Theme
   
-  return(list(sum, meti_1, post, fig))
+  return(list(sum, meti_1, post, fig = fig))
   
 }
-
 
 
 
@@ -271,13 +278,15 @@ two_way_within_anova_position(meti, idk_minus_know_meti)
 ## third way interaction
 
 ```{r}
-two_way_analysis_gap(Data_3$idk_minus_know_meti)
+METI_gap <- two_way_analysis_gap(Data_3$idk_minus_know_meti, 'METI')
 t_1 <- one_sample_correc(Data_3$idk_minus_know_meti, 'Dr', 'first', 'third')
 t_2 <- one_sample_correc(Data_3$idk_minus_know_meti, 'Dr', 'second', 'third')
 t_3 <- one_sample_correc(Data_3$idk_minus_know_meti, 'Lay', 'first', 'third')
 t_4 <- one_sample_correc(Data_3$idk_minus_know_meti, 'Lay', 'second', 'third')
 
 p.adjust(c(t_1$model$p.value, t_2$model$p.value, t_3$model$p.value, t_4$model$p.value),method="bonferroni")
+
+
 
 ```
 
@@ -302,7 +311,7 @@ two_way_within_anova_whoIDk(exoertise, idk_minus_know_Expertise)
 ```
 
 ```{r}
-two_way_analysis_gap(Data_3$idk_minus_know_Expertise)
+Expertise_gap <- two_way_analysis_gap(Data_3$idk_minus_know_Expertise, title = 'Expertise')
 t_1 <- one_sample_correc(Data_3$idk_minus_know_Expertise, 'Dr', 'first', 'third')
 t_2 <- one_sample_correc(Data_3$idk_minus_know_Expertise, 'Dr', 'second', 'third')
 t_3 <- one_sample_correc(Data_3$idk_minus_know_Expertise, 'Lay', 'first', 'third')
@@ -310,6 +319,12 @@ t_4 <- one_sample_correc(Data_3$idk_minus_know_Expertise, 'Lay', 'second', 'thir
 
 p.adjust(c(t_1$model$p.value, t_2$model$p.value, t_3$model$p.value, t_4$model$p.value),method="bonferroni")
 
+
+
+
+
+
+(METI_gap$fig + Expertise_gap$fig + Integrity_gap$fig + Benevolance_gap$fig)
 ```
 
 # Integrity
@@ -335,13 +350,15 @@ two_way_within_anova_whoIDk(integrity, idk_minus_know_Integrity)
 ## third way interaction
 
 ```{r}
-two_way_analysis_gap(Data_3$idk_minus_know_Integrity)
+Integrity_gap <- two_way_analysis_gap(Data_3$idk_minus_know_Integrity, 'Integrity')
 t_1 <- one_sample_correc(Data_3$idk_minus_know_Integrity, 'Dr', 'first', 'third')
 t_2 <- one_sample_correc(Data_3$idk_minus_know_Integrity, 'Dr', 'second', 'third')
 t_3 <- one_sample_correc(Data_3$idk_minus_know_Integrity, 'Lay', 'first', 'third')
 t_4 <- one_sample_correc(Data_3$idk_minus_know_Integrity, 'Lay', 'second', 'third')
 
 p.adjust(c(t_1$model$p.value, t_2$model$p.value, t_3$model$p.value, t_4$model$p.value),method="bonferroni")
+
+
 
 ```
 
@@ -368,7 +385,7 @@ two_way_within_anova_whoIDk(benevolence, idk_minus_know_Benevolance)
 ## third way interaction
 
 ```{r}
-two_way_analysis_gap(Data_3$idk_minus_know_Benevolance)
+Benevolance_gap <- two_way_analysis_gap(Data_3$idk_minus_know_Benevolance, 'Benevolence')
 t_1 <- one_sample_correc(Data_3$idk_minus_know_Benevolance, 'Dr', 'first', 'third')
 t_2 <- one_sample_correc(Data_3$idk_minus_know_Benevolance, 'Dr', 'second', 'third')
 t_3 <- one_sample_correc(Data_3$idk_minus_know_Benevolance, 'Lay', 'first', 'third')
