@@ -16,11 +16,13 @@ Theme <- theme(axis.text.x = element_text(size = 10),
 
 ```{r}
 Data_1 <- readRDS(here("Data//Data_1.rds"))
-
+ljnl
 ```
 
 # Age and gender
+
 ## Goodness of fit
+
 ```{r}
 
 table(Data_1$Gender)
@@ -32,6 +34,7 @@ skim(Data_1$Age)
 ```
 
 ## Independence
+
 ```{r}
 CrossTable(Data_1$Gender, Data_1$Condition)
 
@@ -39,6 +42,7 @@ oneWayAnova(Data_1$Age, Data_1$Condition)
 ```
 
 ## Alpha
+
 ```{r}
 Data_1 %>% 
   select(METI_1, METI_2, METI_3, METI_4, METI_5, METI_6
@@ -65,6 +69,7 @@ Data_1 %>%
 ```
 
 ## METI
+
 ```{r}
 data_1_ds_meti <- Data_1 %>%
   group_by(source_identity, source_answer) %>%
@@ -96,8 +101,8 @@ data_1_fig_meti <- Data_1 %>%
   Theme
 ```
 
-
 ## METI_Expertise
+
 ```{r}
 data_1_ds_expertise <- Data_1 %>%
    group_by(source_identity, source_answer) %>%
@@ -122,8 +127,8 @@ data_1_fig_expertise <- Data_1 %>%
 
 ```
 
-
 ## METI_Integrity
+
 ```{r}
 data_1_ds_integrity <- Data_1 %>%
   group_by(source_identity, source_answer) %>%
@@ -148,6 +153,7 @@ data_1_fig_integrity <- Data_1 %>%
 ```
 
 ## METI_Benelovent
+
 ```{r}
 data_1_ds_benevolence <- Data_1 %>%
   group_by(source_identity, source_answer) %>%
@@ -171,4 +177,3 @@ data_1_fig_benevolence <- Data_1 %>%
   ggtitle('Benevolence 1') +
   Theme
 ```
-
